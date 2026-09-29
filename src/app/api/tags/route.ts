@@ -99,9 +99,7 @@ export async function GET() {
       if (b.code === "HOT") appliedCount = hotCount;
       else if (b.code === "BESTSELLER") appliedCount = bestsellerCount;
       else if (b.code === "AVAILABLE") appliedCount = availableCount;
-      else if (b.code === "OUT_OF_STOCK") appliedCount = totalProducts - availableCount;
-      else if (b.code === "SIGNATURE") appliedCount = 2;
-      else if (b.code === "NEW") appliedCount = 1;
+      else if (b.code === "OUT_OF_STOCK") appliedCount = Math.max(0, totalProducts - availableCount);
       else appliedCount = 0;
 
       return {

@@ -2,64 +2,18 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/apiAuth";
 import { checkGenericRateLimit } from "@/lib/rateLimit";
 
-// Default feedbacks list
-let feedbackStore = [
-  {
-    id: "fb-1",
-    customerName: "Minh Anh",
-    customerPhone: "0912***456",
-    rating: 5,
-    dishName: "Nem Nướng Nha Trang",
-    comment: "Nem nướng thơm phức than hoa, sốt chấm thịt băm gia truyền siêu ngon béo ngậy. Giao hàng nóng hổi trong 25 phút!",
-    reply: "Dạ cảm ơn bạn Minh Anh đã ủng hộ Tiệm Chè Na nhiều nha! Chúc bạn ngon miệng ạ ❤️",
-    status: "APPROVED" as const,
-    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-  },
-  {
-    id: "fb-2",
-    customerName: "Hoàng Nam",
-    customerPhone: "0988***123",
-    rating: 5,
-    dishName: "Mỳ Trộn Sốt Cay Trứng Lòng Đào",
-    comment: "Sốt cay vừa miệng, trứng ốp la lòng đào chảy béo ngậy. Topping xúc xích với rau thơm rất đầy đặn.",
-    reply: "Cảm ơn bạn Nam nhiều nhé! Lần sau ghé quán lại nha!",
-    status: "APPROVED" as const,
-    createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
-  },
-  {
-    id: "fb-3",
-    customerName: "Thu Trang",
-    customerPhone: "0976***789",
-    rating: 5,
-    dishName: "Chè Xoài Caramen Thạch Dừa",
-    comment: "Caramen mềm mướt không bị rỗ tí nào, xoài ngọt thơm mát lịm. Đóng gói hộp giấy sạch sẽ tinh tươm.",
-    reply: "",
-    status: "APPROVED" as const,
-    createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-  },
-  {
-    id: "fb-4",
-    customerName: "Đức Huy",
-    customerPhone: "0904***321",
-    rating: 4,
-    dishName: "Chân Gà Sốt Thái",
-    comment: "Chân gà giòn sần sật, cóc xoài chua cay đã miệng. Quán cho thêm nhiều sốt hơn xíu nữa thì tuyệt vời.",
-    reply: "Dạ quán ghi nhận ý kiến của bạn Huy để chuẩn bị đẫm sốt hơn cho đơn sau nha ạ!",
-    status: "APPROVED" as const,
-    createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
-  },
-  {
-    id: "fb-5",
-    customerName: "Khách Ẩn Danh",
-    customerPhone: "0933***888",
-    rating: 5,
-    dishName: "Trà Sữa Thái Đỏ",
-    comment: "Trà sữa đậm vị thơm ngọt dịu, trân châu dai dẻo chuẩn bài.",
-    reply: "",
-    status: "PENDING" as const,
-    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-  },
-];
+// In-memory feedback store (starts empty for real customers)
+let feedbackStore: {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  rating: number;
+  dishName: string;
+  comment: string;
+  reply: string;
+  status: "APPROVED" | "PENDING" | "REJECTED";
+  createdAt: string;
+}[] = [];
 
 export async function GET() {
   return NextResponse.json({ success: true, data: feedbackStore });
