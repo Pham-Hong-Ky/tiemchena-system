@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  icon      String?
+  sortOrder Int       @default(0)
+  isActive  Boolean   @default(true)
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id            String      @id @default(cuid())
+  name          String
+  slug          String      @unique
+  description   String?
+  price         Float
+  originalPrice Float?
+  image         String?
+  isHot         Boolean     @default(false)
+  isBestseller  Boolean     @default(false)
+  isOnBanner    Boolean     @default(false)
+  isAvailable   Boolean     @default(true)
+  categoryId    String
+  category      Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  toppingsJson  String?     // JSON array of available topping IDs or presets
+  orderItems    OrderItem[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Topping {
+  id          String   @id @default(cuid())
+  name        String
+  price       Float
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  orderCode       String      @unique
+  customerName    String
+  customerPhone   String
+  customerAddress String
+  note            String?
+  paymentMethod   String      @default("COD") // COD, VIETQR, ZALO
+  paymentStatus   String      @default("UNPAID") // UNPAID, PAID
+  orderStatus     String      @default("PENDING") // PENDING, CONFIRMED, PREPARING, DELIVERING, COMPLETED, CANCELLED
+  totalAmount     Float
+  discountAmount  Float       @default(0)
+  finalAmount     Float
+  voucherCode     String?
+  items           OrderItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String?
+  product      Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName  String
+  productPrice Float
+  quantity     Int      @default(1)
+  toppingsJson String?  // JSON array of selected toppings
+  itemTotal    Float
+  note         String?
+}
+
+model Voucher {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  discountType  String    @default("PERCENT") // PERCENT, FIXED
+  discountValue Float
+  minOrderValue Float     @default(0)
+  maxDiscount   Float?
+  usageLimit    Int       @default(100)
+  usedCount     Int       @default(0)
+  isActive      Boolean   @default(true)
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+}
+
+model StoreSetting {
+  id                 String   @id @default("default")
+  storeName          String   @default("Tiệm Chè Na")
+  hotline            String   @default("0986479285")
+  address            String   @default("Vũ Lăng, Ngũ Hiệp, Thanh Trì, Hà Nội")
+  openingHours       String   @default("09:00 - 22:30")
+  bannerAnnouncement String   @default("GIẢM NGAY 10% tổng hóa đơn khi đặt trước hoặc chốt đơn qua Zalo hôm nay!")
+  qrBankId           String   @default("MB") // Vietinbank, MB, VCB...
+  qrAccountNumber    String   @default("0986479285")
+  qrAccountName      String   @default("TIEM CHE NA")
+  zaloUrl            String   @default("https://zalo.me/0986479285")
+  isAcceptingOrders  Boolean  @default(true)
+  updatedAt          DateTime @updatedAt
+}
