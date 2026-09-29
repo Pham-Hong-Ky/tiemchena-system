@@ -22,6 +22,7 @@ import {
   LogOut
 } from "lucide-react";
 import { AdminThemeQuickToggle } from "@/components/admin/AdminThemeQuickToggle";
+import { toast } from "@/context/ToastContext";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -47,13 +48,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [pathname]);
 
   const handleLogout = async () => {
-    if (!confirm("Bạn có chắc chắn muốn đăng xuất khỏi trang quản trị?")) return;
     try {
+      toast.info("Đang đăng xuất khỏi hệ thống...");
       await fetch("/api/admin/auth/logout", { method: "POST" });
+      toast.success("Đã đăng xuất thành công");
       router.push("/admin/login");
       router.refresh();
     } catch (e) {
       console.error(e);
+      toast.error("Lỗi khi đăng xuất");
       router.push("/admin/login");
       router.refresh();
     }

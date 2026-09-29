@@ -101,7 +101,7 @@ function LoginForm() {
         {/* Username */}
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-            Tài Khoản Quản Trị
+            Tài Khoản
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -125,7 +125,7 @@ function LoginForm() {
         {/* Password */}
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-            Mật Khẩu Truy Cập
+            Mật Khẩu
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">

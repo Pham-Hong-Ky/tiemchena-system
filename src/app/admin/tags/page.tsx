@@ -182,14 +182,12 @@ export default function AdminTagsPage() {
   };
 
   const handleDelete = async (tag: TagType) => {
-    if (window.confirm(`Xác nhận xóa nhãn "${tag.name}"?`)) {
-      try {
-        await deleteTag(tag.id);
-        toast.success(`Đã xóa nhãn "${tag.name}" thành công`);
-        loadData();
-      } catch (err) {
-        toast.error("Không thể xóa thẻ");
-      }
+    try {
+      await deleteTag(tag.id);
+      toast.success(`Đã xóa nhãn "${tag.name}" thành công`);
+      loadData();
+    } catch (err) {
+      toast.error("Không thể xóa thẻ");
     }
   };
 

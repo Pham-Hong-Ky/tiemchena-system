@@ -434,9 +434,7 @@ export default function AdminKdsPage() {
                   {!isCompleted && !isCancelled && (
                     <button
                       onClick={() => {
-                        if (confirm("Bạn có chắc muốn hủy đơn hàng này?")) {
-                          handlePatchOrder(order.id, { orderStatus: "CANCELLED" });
-                        }
+                        handlePatchOrder(order.id, { orderStatus: "CANCELLED" });
                       }}
                       className="col-span-2 text-slate-400 hover:text-red-500 py-1 text-[11px] font-normal cursor-pointer"
                     >

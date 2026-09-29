@@ -87,7 +87,7 @@ export function Footer() {
               </span>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed font-normal">
-              Điểm hẹn ăn vặt & chè thanh mát hàng đầu khu vực Vũ Lăng, Ngũ Hiệp, Thanh Trì. Nem nướng Nha Trang thơm lừng than hoa, chè xoài caramen béo ngậy chuẩn vị.
+              Điểm hẹn ăn vặt & chè thanh mát hàng đầu khu vực Vũ Lăng, Ngũ Hiệp, Thanh Trì. Thực đơn món ăn vặt phong phú, chè tráng miệng gia truyền thanh mát chuẩn vị.
             </p>
             <div className="flex items-center gap-3 pt-1">
               <a
@@ -130,15 +130,15 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Col 3: Danh mục món hot */}
+          {/* Col 3: Danh mục & Liên kết nhanh */}
           <div className="space-y-3">
-            <h4 className="font-extrabold text-sm text-white uppercase tracking-wider">Món Bán Chạy</h4>
+            <h4 className="font-extrabold text-sm text-white uppercase tracking-wider">Khám Phá Thực Đơn</h4>
             <ul className="space-y-2 text-xs text-slate-300">
-              <li><a href="#mon-hot" className="hover:text-white transition font-medium">Nem Nướng Nha Trang Đặc Biệt (35k)</a></li>
-              <li><a href="#menu" className="hover:text-white transition font-medium">Mỳ Trộn Sốt Cay Trứng Lòng Đào (35k)</a></li>
-              <li><a href="#menu" className="hover:text-white transition font-medium">Chè Xoài Caramen Thạch Dừa (30k)</a></li>
-              <li><a href="#menu" className="hover:text-white transition font-medium">Chân Gà Sốt Thái Chua Cay (35k)</a></li>
-              <li><a href="#menu" className="hover:text-white transition font-medium">Trà Sữa Thái Đỏ Trân Châu (25k)</a></li>
+              <li><a href="#menu" className="hover:text-white transition font-medium">🍽️ Toàn Bộ Thực Đơn Món Ăn</a></li>
+              <li><a href="#mon-hot" className="hover:text-white transition font-medium">🔥 Món Bán Chạy Đặc Sản</a></li>
+              <li><a href="#danh-gia" className="hover:text-white transition font-medium">⭐ Đánh Giá Từ Thực Khách</a></li>
+              <li><a href="#menu" className="hover:text-white transition font-medium">🛒 Hướng Dẫn Đặt Món Online</a></li>
+              <li><a href="https://zalo.me/0986479285" target="_blank" rel="noopener noreferrer" className="hover:text-white transition font-medium">💬 Đặt Tiệc / Tư Vấn Zalo</a></li>
             </ul>
           </div>
 

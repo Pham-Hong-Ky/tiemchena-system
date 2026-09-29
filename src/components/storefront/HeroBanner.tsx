@@ -21,46 +21,14 @@ interface HeroBannerProps {
   onSelectTag: (keyword: string) => void;
 }
 
-const DEFAULT_SLIDES = [
+const STORE_WELCOME_SLIDE = [
   {
-    image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
-    badge: "🔥 BÁN CHẠY SỐ 1",
+    image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80",
+    badge: "TIỆM CHÈ NA",
     badgeColor: "bg-orange-600",
-    title: "Nem Nướng Nha Trang Đặc Biệt",
-    subtitle: "Kèm sốt thịt băm gia truyền & ram giòn rụm",
-    price: "35.000đ",
-  },
-  {
-    image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=800&q=80",
-    badge: "🌶️ MÓN GÂY NGHIỆN",
-    badgeColor: "bg-red-600",
-    title: "Mỳ Trộn Sốt Cay Trứng Xúc Xích",
-    subtitle: "Đậm đà sốt cay đặc sản, ngập tràn topping",
-    price: "35.000đ",
-  },
-  {
-    image: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80",
-    badge: "🥭 THANH MÁT GIẢI NHIỆT",
-    badgeColor: "bg-amber-500",
-    title: "Chè Xoài Caramen Thạch Dừa",
-    subtitle: "Caramen ngậy béo kết hợp xoài chín & cốt dừa",
-    price: "30.000đ",
-  },
-  {
-    image: "https://images.unsplash.com/photo-1527477378731-d85f81a7428f?auto=format&fit=crop&w=800&q=80",
-    badge: "⚡ ĂN VẶT CỰC ĐÃ",
-    badgeColor: "bg-emerald-600",
-    title: "Chân Gà Sốt Thái Chua Cay",
-    subtitle: "Chân gà giòn sần sật, cóc xoài chua cay thấm vị",
-    price: "35.000đ",
-  },
-  {
-    image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=800&q=80",
-    badge: "🧋 ĐỒ UỐNG MÁT LẠNH",
-    badgeColor: "bg-amber-700",
-    title: "Trà Sữa Thái Đỏ Trân Châu",
-    subtitle: "Trà Thái đậm đà quyện cốt sữa thơm ngọt dịu",
-    price: "25.000đ",
+    title: "Tiệm Chè Na — Món Ngon Gia Truyền",
+    subtitle: "Thực đơn ăn vặt nóng giòn & chè thanh mát giao tận nơi",
+    price: "Menu Trực Tuyến",
   },
 ];
 
@@ -85,7 +53,7 @@ export function HeroBanner({ products = [], onSelectTag }: HeroBannerProps) {
 
   const activeSlides =
     bannerProducts.length === 0
-      ? DEFAULT_SLIDES
+      ? STORE_WELCOME_SLIDE
       : bannerProducts.map((p, idx) => ({
           image: p.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
           badge: p.isBestseller ? "🔥 BÁN CHẠY SỐ 1" : p.isHot ? "🌶️ MÓN GÂY NGHIỆN" : "⚡ ĐẶC SẢN TIỆM",
@@ -152,36 +120,23 @@ export function HeroBanner({ products = [], onSelectTag }: HeroBannerProps) {
             </h1>
 
             <p className="text-base sm:text-lg text-white/95 leading-relaxed max-w-2xl mx-auto lg:mx-0 font-medium drop-shadow-xs">
-              Cơn đói chiều tối ập đến? Chẳng cần đi đâu xa! <strong>Tiệm Chè Na</strong> phục vụ nem nướng nóng giòn tận chảo, mỳ trộn sốt cay đậm đà, chè xoài caramen béo ngậy giao tận tay trong <strong>30 phút</strong>!
+              Chào mừng bạn đến với <strong>Tiệm Chè Na</strong>! Thưởng thức món ăn vặt nóng giòn, chè thanh mát đậm đà chuẩn vị gia truyền, giao hàng tận tay trong <strong>30 phút</strong>!
             </p>
 
-            {/* Quick Bestseller Tags */}
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 pt-1">
-              <button
-                onClick={() => onSelectTag("Nem Nướng")}
-                className="inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white border border-white/25 hover:border-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-xs transition backdrop-blur-md cursor-pointer"
-              >
-                <Flame className="w-3.5 h-3.5 text-yellow-300" /> Nem Nướng: <strong className="text-yellow-200">35k</strong>
-              </button>
-              <button
-                onClick={() => onSelectTag("Mỳ Trộn")}
-                className="inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white border border-white/25 hover:border-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-xs transition backdrop-blur-md cursor-pointer"
-              >
-                <Utensils className="w-3.5 h-3.5 text-yellow-300" /> Mỳ Trộn Cay: <strong className="text-yellow-200">35k</strong>
-              </button>
-              <button
-                onClick={() => onSelectTag("Chè Xoài")}
-                className="inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white border border-white/25 hover:border-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-xs transition backdrop-blur-md cursor-pointer"
-              >
-                <span>🥭</span> Chè Xoài Caramen: <strong className="text-yellow-200">30k</strong>
-              </button>
-              <button
-                onClick={() => onSelectTag("Trà Sữa")}
-                className="inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white border border-white/25 hover:border-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-xs transition backdrop-blur-md cursor-pointer"
-              >
-                <span>🧋</span> Trà Sữa Thái: <strong className="text-yellow-200">25k</strong>
-              </button>
-            </div>
+            {/* Quick Product Tags (Dynamic from real products) */}
+            {products.length > 0 && (
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 pt-1">
+                {products.slice(0, 4).map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => onSelectTag(p.name)}
+                    className="inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white border border-white/25 hover:border-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-xs transition backdrop-blur-md cursor-pointer"
+                  >
+                    <Flame className="w-3.5 h-3.5 text-yellow-300" /> {p.name}: <strong className="text-yellow-200">{Math.round(p.price / 1000)}k</strong>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Primary CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">

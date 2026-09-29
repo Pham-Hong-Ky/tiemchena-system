@@ -95,14 +95,12 @@ export default function AdminFeedbackPage() {
   };
 
   const handleDelete = async (fb: FeedbackType) => {
-    if (window.confirm(`Xác nhận xóa đánh giá của khách "${fb.customerName}"?`)) {
-      try {
-        await deleteFeedback(fb.id);
-        toast.success("Đã xóa đánh giá thành công");
-        loadData();
-      } catch (err) {
-        toast.error("Không thể xóa đánh giá");
-      }
+    try {
+      await deleteFeedback(fb.id);
+      toast.success("Đã xóa đánh giá thành công");
+      loadData();
+    } catch (err) {
+      toast.error("Không thể xóa đánh giá");
     }
   };
 

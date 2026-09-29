@@ -125,20 +125,12 @@ export default function AdminCategoriesPage() {
   };
 
   const handleDelete = async (cat: CategoryType) => {
-    const prodCount = cat._count?.products || 0;
-    const msg =
-      prodCount > 0
-        ? `Danh mục này đang có ${prodCount} món ăn. Bạn có chắc chắn muốn xóa không?`
-        : `Xác nhận xóa danh mục "${cat.name}"?`;
-
-    if (window.confirm(msg)) {
-      try {
-        await deleteCategory(cat.id);
-        toast.success(`Đã xóa danh mục "${cat.name}" thành công`);
-        loadData();
-      } catch (err) {
-        toast.error("Không thể xóa danh mục");
-      }
+    try {
+      await deleteCategory(cat.id);
+      toast.success(`Đã xóa danh mục "${cat.name}" thành công`);
+      loadData();
+    } catch (err) {
+      toast.error("Không thể xóa danh mục");
     }
   };
 
