@@ -46,6 +46,7 @@ export function ProductCustomizeModal({
 
     const toppingMap = new Map((toppingsList || []).map((t) => [t.id, t]));
 
+    // 1. Phân tích tùy chọn riêng đã cấu hình cho món ăn (nếu có)
     if (product.toppingsJson) {
       try {
         const parsed =
@@ -53,13 +54,10 @@ export function ProductCustomizeModal({
             ? JSON.parse(product.toppingsJson)
             : product.toppingsJson;
 
-        if (Array.isArray(parsed)) {
-          if (parsed.length === 0) return [];
-
+        if (Array.isArray(parsed) && parsed.length > 0) {
           const resolved: ToppingType[] = [];
           parsed.forEach((item: any, idx: number) => {
             if (typeof item === "string") {
-              // Lookup from global toppings by ID
               const found = toppingMap.get(item);
               if (found) {
                 resolved.push({
@@ -70,7 +68,6 @@ export function ProductCustomizeModal({
                 });
               }
             } else if (item && typeof item === "object" && item.name) {
-              // Custom option object created in Admin
               resolved.push({
                 id: item.id || `opt-${idx}-${String(item.name).toLowerCase().replace(/[^a-z0-9]/g, "")}`,
                 name: item.name,
@@ -80,7 +77,9 @@ export function ProductCustomizeModal({
             }
           });
 
-          return resolved;
+          if (resolved.length > 0) {
+            return resolved;
+          }
         }
       } catch (e) {
         console.error("Error parsing toppingsJson", e);

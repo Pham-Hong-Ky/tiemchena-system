@@ -16,25 +16,25 @@ const MENU_BOARDS: MenuImageItem[] = [
   {
     id: "board-do-an",
     badge: "BẢNG ĂN VẶT & MẸT",
-    badgeColor: "bg-orange-600 text-white",
+    badgeColor: "bg-amber-600 text-white",
     title: "Nem Nướng, Mỳ Trộn, Mẹt Nem Lụi & Đồ Chiên",
-    description: "Đầy đủ mỳ cay 7 cấp độ, phở cuốn, bánh mì chảo, gà lắc phomai và các loại đồ chiên giòn thơm nức mũi.",
+    description: "Đầy đủ mỳ cay 7 cấp độ, phở cuốn, bánh mì chảo, gà rán cay, xúc xích, kimbap chiên...",
     imageUrl: "https://res.cloudinary.com/vhguqaqt/image/upload/v1790778393/tiemchena/menu/menu-do-an.jpg",
   },
   {
     id: "board-che-do-uong",
     badge: "BẢNG CHÈ & ĐỒ UỐNG",
-    badgeColor: "bg-teal-600 text-white",
+    badgeColor: "bg-sky-600 text-white",
     title: "Chè Xoài, Trà Sữa, Nước Ép & Sinh Tố Bơ",
-    description: "Chè dừa dầm, tào phớ caramen, sữa chua mít, trà tắc khổng lồ và các loại sinh tố hoa quả tươi mát lành.",
+    description: "Chè dừa dầm, tào phớ caramen, sữa chua mít, trà chanh giã tay, sinh tố hoa quả...",
     imageUrl: "https://res.cloudinary.com/vhguqaqt/image/upload/v1790778390/tiemchena/menu/menu-che-va-do-uong.jpg",
   },
   {
     id: "board-chan-ga",
     badge: "CHUYÊN CHÂN GÀ SỐT THÁI",
-    badgeColor: "bg-red-600 text-white",
+    badgeColor: "bg-orange-700 text-white",
     title: "Chân Gà Sốt Thái, Sả Tắc, Hấp Sả & Xào Cay",
-    description: "Suất nhỏ chỉ từ 35k, suất lớn 55k - 65k, tặng kèm sốt chấm độc quyền cay tê, đậm đà khó cưỡng.",
+    description: "Suất nhỏ chỉ từ 35k, suất lớn 55k – 65k, tặng kèm xoài cóc chua ngọt và bánh mì giòn!",
     imageUrl: "https://res.cloudinary.com/vhguqaqt/image/upload/v1790778388/tiemchena/menu/menu-chan-ga.jpg",
   },
 ];
@@ -96,13 +96,6 @@ export function FullMenuGallerySection() {
                   <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
                     {board.description}
                   </p>
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-orange-600">
-                  <span className="flex items-center gap-1">
-                    <ZoomIn className="w-3.5 h-3.5" /> Chạm để phóng to
-                  </span>
-                  <span className="text-[11px] text-slate-400 font-normal">HD 1080p</span>
                 </div>
               </div>
             </div>

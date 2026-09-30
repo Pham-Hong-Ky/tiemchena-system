@@ -25,8 +25,7 @@ export function ExclusiveSetsSection({ onSelectCategory }: ExclusiveSetsSectionP
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-8">
           <span className="inline-flex items-center gap-1.5 text-orange-700 bg-orange-100 text-xs font-bold px-3.5 py-1 rounded-full uppercase tracking-wider mb-2.5">
-            <Sparkles className="w-3.5 h-3.5 text-orange-600" />
-            Bộ Sưu Tập Món Thật
+            Bộ Sưu Tập Món Ăn
           </span>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
             Hai Bộ Tứ Món Độc Quyền Tiệm Chè Na
@@ -61,10 +60,10 @@ export function ExclusiveSetsSection({ onSelectCategory }: ExclusiveSetsSectionP
               </p>
               <div className="pt-2">
                 <button
-                  onClick={() => handleNavigate("do-an")}
+                  onClick={() => handleNavigate("an-vat-met")}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-extrabold text-xs sm:text-sm py-3 px-6 rounded-2xl shadow-lg shadow-red-900/30 transition-all active:scale-95 cursor-pointer"
                 >
-                  <span>Xem Menu Ăn Vặt</span>
+                  <span>Xem Menu Ăn Vặt & Mẹt</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -94,10 +93,10 @@ export function ExclusiveSetsSection({ onSelectCategory }: ExclusiveSetsSectionP
               </p>
               <div className="pt-2">
                 <button
-                  onClick={() => handleNavigate("che")}
+                  onClick={() => handleNavigate("che-do-uong")}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-100 text-slate-900 font-extrabold text-xs sm:text-sm py-3 px-6 rounded-2xl shadow-lg shadow-black/20 transition-all active:scale-95 cursor-pointer"
                 >
-                  <span>Xem Menu Chè</span>
+                  <span>Xem Menu Chè & Đồ Uống</span>
                   <ArrowRight className="w-4 h-4 text-orange-600" />
                 </button>
               </div>

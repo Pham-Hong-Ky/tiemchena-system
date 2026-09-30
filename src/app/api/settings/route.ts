@@ -35,7 +35,15 @@ export async function GET() {
       isBankLocked: true, // Báo cho client biết tài khoản đã khóa cứng bởi server
     };
 
-    return NextResponse.json({ success: true, data: secureSetting });
+    return NextResponse.json(
+      { success: true, data: secureSetting },
+      {
+        headers: {
+          "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+          Pragma: "no-cache",
+        },
+      }
+    );
   } catch (error) {
     console.error("GET settings error:", error);
     return NextResponse.json({ success: false, error: "Lỗi cấu hình cửa hàng" }, { status: 500 });

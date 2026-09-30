@@ -53,6 +53,7 @@ export function validateToppingsJson(toppingsJson: unknown): {
   if (Array.isArray(list)) {
     for (const opt of list) {
       if (!opt) continue;
+      if (typeof opt === "string") continue; // Valid ID reference
       const optPrice = parseFloat(opt.price);
       if (isNaN(optPrice) || (optPrice !== 0 && (optPrice < 1000 || optPrice > 500000))) {
         return {

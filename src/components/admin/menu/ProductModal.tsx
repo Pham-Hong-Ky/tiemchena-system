@@ -94,7 +94,8 @@ export function ProductModal({
       setFormName(editingProduct.name);
       setFormPrice(editingProduct.price.toString());
       setFormOriginalPrice(editingProduct.originalPrice ? editingProduct.originalPrice.toString() : "");
-      setFormCategoryId(editingProduct.categoryId);
+      const catMatches = categories.some((c) => c.id === editingProduct.categoryId);
+      setFormCategoryId(catMatches ? editingProduct.categoryId : (categories[0]?.id || ""));
       setFormDescription(editingProduct.description || "");
       setFormImage(editingProduct.image || "");
       setFormIsHot(Boolean(editingProduct.isHot));
@@ -615,11 +616,14 @@ export function ProductModal({
                       type="checkbox"
                       checked={formIsOnBanner}
                       onChange={(e) => {
+                        const MAX_BANNER = 8;
                         const otherBannerCount = allProducts.filter(
                           (p) => p.isOnBanner && (!editingProduct || p.id !== editingProduct.id)
                         ).length;
-                        if (e.target.checked && otherBannerCount >= 5) {
-                          toast.warning("Đã có tối đa 5 món được ghim trên Banner trang chủ. Vui lòng bỏ chọn bớt món khác trước!");
+                        if (e.target.checked && otherBannerCount >= MAX_BANNER) {
+                          toast.warning(
+                            `Đã có tối đa ${MAX_BANNER} món được ghim trên Banner trang chủ. Vui lòng chuyển sang tab "🎯 Banner" và bỏ bớt món trước!`
+                          );
                           return;
                         }
                         setFormIsOnBanner(e.target.checked);
@@ -629,7 +633,7 @@ export function ProductModal({
                     <span className="flex items-center gap-1.5">
                       <span>Hiển thị trên Banner 🎯</span>
                       <span className="text-[10px] text-purple-700 bg-purple-100 font-extrabold px-1.5 py-0.5 rounded-md">
-                        {allProducts.filter((p) => p.isOnBanner && (!editingProduct || p.id !== editingProduct.id)).length + (formIsOnBanner ? 1 : 0)}/5 món
+                        {allProducts.filter((p) => p.isOnBanner && (!editingProduct || p.id !== editingProduct.id)).length + (formIsOnBanner ? 1 : 0)}/8 món
                       </span>
                     </span>
                   </label>

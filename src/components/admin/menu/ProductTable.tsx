@@ -23,6 +23,7 @@ interface ProductTableProps {
   onEditProduct: (p: ProductType) => void;
   onDeleteProduct: (id: string) => void;
   onToggleAvailable: (p: ProductType) => void;
+  onToggleBanner?: (p: ProductType) => void;
 }
 
 export function ProductTable({
@@ -32,6 +33,7 @@ export function ProductTable({
   onEditProduct,
   onDeleteProduct,
   onToggleAvailable,
+  onToggleBanner,
 }: ProductTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCat, setSelectedCat] = useState("all");
@@ -39,7 +41,12 @@ export function ProductTable({
   const pageSize = 8;
 
   const filteredProducts = products.filter((p) => {
-    const matchCat = selectedCat === "all" || p.categoryId === selectedCat;
+    const matchCat =
+      selectedCat === "all"
+        ? true
+        : selectedCat === "banner"
+        ? Boolean(p.isOnBanner)
+        : p.categoryId === selectedCat;
     const matchSearch =
       !searchQuery.trim() ||
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -83,6 +90,31 @@ export function ProductTable({
           >
             🍽️ Tất Cả ({products.length})
           </button>
+
+          {/* Tab lọc các món đang ghim Banner */}
+          <button
+            onClick={() => {
+              setSelectedCat("banner");
+              setCurrentPage(1);
+            }}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
+              selectedCat === "banner"
+                ? "bg-purple-700 text-white shadow-xs"
+                : "bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200"
+            }`}
+          >
+            <span>🎯 Banner</span>
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                selectedCat === "banner"
+                  ? "bg-white/20 text-white"
+                  : "bg-purple-200/80 text-purple-900"
+              }`}
+            >
+              {products.filter((p) => p.isOnBanner).length}
+            </span>
+          </button>
+
           {categories.map((c) => (
             <button
               key={c.id}
@@ -151,7 +183,7 @@ export function ProductTable({
                           />
                           <div>
                             <div className="font-extrabold text-slate-900 text-sm">{p.name}</div>
-                            <div className="flex items-center gap-1 mt-1">
+                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                               {p.isHot && (
                                 <span className="bg-red-100 text-red-700 text-[10px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                                   <Flame className="w-2.5 h-2.5" /> HOT
@@ -162,11 +194,31 @@ export function ProductTable({
                                   <Star className="w-2.5 h-2.5" /> Bestseller
                                 </span>
                               )}
-                              {p.isOnBanner && (
+                              {onToggleBanner ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onToggleBanner(p);
+                                  }}
+                                  title={
+                                    p.isOnBanner
+                                      ? "Đang ghim trên Banner (Nhấp để gỡ)"
+                                      : "Nhấp để ghim lên Banner trang chủ"
+                                  }
+                                  className={`text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5 transition cursor-pointer ${
+                                    p.isOnBanner
+                                      ? "bg-purple-100 text-purple-700 hover:bg-purple-200 border border-purple-300 shadow-2xs"
+                                      : "bg-slate-100 text-slate-400 hover:text-purple-700 hover:bg-purple-50 border border-dashed border-slate-300"
+                                  }`}
+                                >
+                                  <span>🎯 {p.isOnBanner ? "Banner" : "+ Banner"}</span>
+                                </button>
+                              ) : p.isOnBanner ? (
                                 <span className="bg-purple-100 text-purple-700 text-[10px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-0.5 border border-purple-200">
                                   🎯 Banner
                                 </span>
-                              )}
+                              ) : null}
                             </div>
                           </div>
                         </div>

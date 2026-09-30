@@ -55,7 +55,8 @@ export async function PUT(
       validatedOrigPrice = origPriceCheck.value;
     }
 
-    // Check banner limit if toggling isOnBanner to true
+    // Check banner limit if toggling isOnBanner to true (max 8)
+    const MAX_BANNER = 8;
     if (isOnBanner !== undefined && Boolean(isOnBanner)) {
       const bannerCount = await prisma.product.count({
         where: {
@@ -63,9 +64,12 @@ export async function PUT(
           id: { not: id },
         },
       });
-      if (bannerCount >= 5) {
+      if (bannerCount >= MAX_BANNER) {
         return NextResponse.json(
-          { success: false, error: "Đã đạt giới hạn tối đa 5 món hiển thị trên Banner. Vui lòng bỏ chọn bớt món khác!" },
+          {
+            success: false,
+            error: `Đã đạt giới hạn tối đa ${MAX_BANNER} món hiển thị trên Banner. Vui lòng chuyển sang tab "🎯 Banner" để bỏ chọn bớt món khác!`,
+          },
           { status: 400 }
         );
       }
@@ -81,6 +85,17 @@ export async function PUT(
       validatedToppingsJsonStr = toppingsCheck.jsonString;
     }
 
+    let validCategoryId: string | undefined = undefined;
+    if (categoryId) {
+      const cat = await prisma.category.findUnique({ where: { id: categoryId } });
+      if (cat) {
+        validCategoryId = cat.id;
+      } else {
+        const fallbackCat = await prisma.category.findFirst({ orderBy: { sortOrder: "asc" } });
+        validCategoryId = fallbackCat?.id;
+      }
+    }
+
     const updated = await prisma.product.update({
       where: { id },
       data: {
@@ -93,7 +108,7 @@ export async function PUT(
         ...(isBestseller !== undefined && { isBestseller: Boolean(isBestseller) }),
         ...(isOnBanner !== undefined && { isOnBanner: Boolean(isOnBanner) }),
         ...(isAvailable !== undefined && { isAvailable: Boolean(isAvailable) }),
-        ...(categoryId && { categoryId }),
+        ...(validCategoryId && { categoryId: validCategoryId }),
         ...(validatedToppingsJsonStr !== undefined && { toppingsJson: validatedToppingsJsonStr }),
       },
     });
@@ -101,7 +116,8 @@ export async function PUT(
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     console.error("Error updating product:", error);
-    return NextResponse.json({ success: false, error: "Không thể cập nhật món ăn" }, { status: 500 });
+    const errorMsg = error instanceof Error ? error.message : "Lỗi máy chủ khi cập nhật món ăn";
+    return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
   }
 }
 

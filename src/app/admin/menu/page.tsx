@@ -20,8 +20,8 @@ export default function AdminMenuPage() {
   const fetchData = async () => {
     try {
       const [prodRes, catRes] = await Promise.all([
-        fetch("/api/products"),
-        fetch("/api/categories"),
+        fetch("/api/products", { cache: "no-store" }),
+        fetch("/api/categories", { cache: "no-store" }),
       ]);
       const prodData = await prodRes.json();
       const catData = await catRes.json();
@@ -75,6 +75,77 @@ export default function AdminMenuPage() {
     }
   };
 
+  const [isResettingBanner, setIsResettingBanner] = useState(false);
+
+  const handleToggleBanner = async (product: ProductType) => {
+    try {
+      const nextBannerState = !product.isOnBanner;
+
+      // If turning ON, check limit of 8
+      if (nextBannerState) {
+        const currentBannerCount = products.filter(
+          (p) => p.isOnBanner && p.id !== product.id
+        ).length;
+        if (currentBannerCount >= 8) {
+          toast.warning(
+            "Đã có tối đa 8 món trên Banner. Vui lòng bấm vào tab '🎯 Banner' để bỏ bớt món trước!"
+          );
+          return;
+        }
+      }
+
+      const res = await fetch(`/api/products/${product.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isOnBanner: nextBannerState }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProducts((prev) =>
+          prev.map((item) =>
+            item.id === product.id ? { ...item, isOnBanner: nextBannerState } : item
+          )
+        );
+        toast.success(
+          nextBannerState
+            ? `Đã ghim "${product.name}" lên Banner 🎯`
+            : `Đã bỏ ghim "${product.name}" khỏi Banner`
+        );
+      } else {
+        toast.error(data.error || "Không thể cập nhật Banner");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Lỗi kết nối khi cập nhật Banner");
+    }
+  };
+
+  const handleResetBannerStandard = async () => {
+    if (
+      !confirm(
+        "Hệ thống sẽ chọn lọc lại đúng 5 món đặc sắc nhất để ghim lên Banner trang chủ (Nem Nướng, Chân Gà Sốt Thái, Chè Dừa Dầm, Mỳ Cay, Trà Sữa). Bạn có chắc chắn muốn chuẩn hóa không?"
+      )
+    ) {
+      return;
+    }
+    setIsResettingBanner(true);
+    try {
+      const res = await fetch("/api/admin/reset-banner", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || "Đã chuẩn hóa về 5 món Banner chuẩn!");
+        fetchData();
+      } else {
+        toast.error(data.error || "Không thể đặt lại banner");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Lỗi khi kết nối đặt lại banner");
+    } finally {
+      setIsResettingBanner(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     try {
       const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
@@ -105,13 +176,24 @@ export default function AdminMenuPage() {
           </p>
         </div>
 
-        <button
-          onClick={openCreateModal}
-          className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white font-bold px-5 py-3 rounded-xl text-sm shadow-md shadow-orange-600/20 transition active:scale-95 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Thêm Món Ăn Mới</span>
-        </button>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            onClick={handleResetBannerStandard}
+            disabled={isResettingBanner}
+            title="Chuẩn hóa lại đúng 5 món Banner tiêu biểu nhất"
+            className="inline-flex items-center gap-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold px-3.5 py-2.5 rounded-xl text-xs shadow-xs transition active:scale-95 cursor-pointer disabled:opacity-50"
+          >
+            <span>🎯 Chuẩn Hóa 5 Banner Mẫu</span>
+          </button>
+
+          <button
+            onClick={openCreateModal}
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white font-bold px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm shadow-md shadow-orange-600/20 transition active:scale-95 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Thêm Món Ăn Mới</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Product Table Component */}
@@ -122,6 +204,7 @@ export default function AdminMenuPage() {
         onEditProduct={openEditModal}
         onDeleteProduct={handleDelete}
         onToggleAvailable={handleToggleAvailable}
+        onToggleBanner={handleToggleBanner}
       />
 
       {/* Add / Edit Product Modal */}

@@ -9,10 +9,6 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
-  ArrowDown,
-  SlidersHorizontal,
-  Check,
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { ButtonFestiveDecorator } from "@/components/theme/ButtonFestiveDecorator";
@@ -30,8 +26,6 @@ interface MenuSectionProps {
 
 const ITEMS_PER_PAGE = 16;
 
-type FilterTag = "ALL" | "BESTSELLER" | "HOT" | "UNDER_35K" | "FROM_35K_TO_50K" | "ABOVE_50K";
-
 export function MenuSection({
   categories,
   products,
@@ -43,57 +37,39 @@ export function MenuSection({
 }: MenuSectionProps) {
   const { config, theme } = useTheme();
 
-  // State phân trang & bộ lọc phụ
+  // State phân trang
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeTag, setActiveTag] = useState<FilterTag>("ALL");
-  const [viewMode, setViewMode] = useState<"pagination" | "loadmore">("loadmore");
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
 
   // Reset trang về 1 khi đổi danh mục hoặc tìm kiếm
   useEffect(() => {
     setCurrentPage(1);
-    setVisibleCount(ITEMS_PER_PAGE);
-  }, [selectedCategory, searchQuery, activeTag]);
+  }, [selectedCategory, searchQuery]);
 
-  // Lọc sản phẩm
+  // Lọc sản phẩm theo danh mục và tìm kiếm
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
-      // 1. Lọc theo Danh mục
       const matchCat =
         selectedCategory === "all" ||
         p.categoryId === selectedCategory ||
         p.category?.slug === selectedCategory;
 
-      // 2. Lọc theo Tìm kiếm
       const matchSearch =
         !searchQuery.trim() ||
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      // 3. Lọc theo Tag phụ
-      let matchTag = true;
-      if (activeTag === "BESTSELLER") matchTag = Boolean(p.isBestseller);
-      else if (activeTag === "HOT") matchTag = Boolean(p.isHot);
-      else if (activeTag === "UNDER_35K") matchTag = p.price < 35000;
-      else if (activeTag === "FROM_35K_TO_50K") matchTag = p.price >= 35000 && p.price <= 50000;
-      else if (activeTag === "ABOVE_50K") matchTag = p.price > 50000;
-
-      return matchCat && matchSearch && matchTag;
+      return matchCat && matchSearch;
     });
-  }, [products, selectedCategory, searchQuery, activeTag]);
+  }, [products, selectedCategory, searchQuery]);
 
   // Phân trang
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE) || 1;
 
-  // Sản phẩm hiển thị theo chế độ
+  // Sản phẩm hiển thị cho trang hiện tại
   const displayedProducts = useMemo(() => {
-    if (viewMode === "loadmore") {
-      return filteredProducts.slice(0, visibleCount);
-    } else {
-      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-      return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    }
-  }, [filteredProducts, viewMode, visibleCount, currentPage]);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
 
   const scrollToMenuTop = () => {
     const el = document.getElementById("menu-catalog");
@@ -105,10 +81,6 @@ export function MenuSection({
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     scrollToMenuTop();
-  };
-
-  const handleLoadMore = () => {
-    setVisibleCount((prev) => Math.min(prev + ITEMS_PER_PAGE, filteredProducts.length));
   };
 
   return (
@@ -135,7 +107,7 @@ export function MenuSection({
         </div>
 
         {/* Search Bar & Category Navigation */}
-        <div id="menu-catalog" className="space-y-4 mb-8">
+        <div id="menu-catalog" className="space-y-4 mb-6">
           {/* Search Bar */}
           <div className="max-w-md mx-auto relative">
             <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -193,68 +165,20 @@ export function MenuSection({
               );
             })}
           </div>
-
-          {/* Quick Filter Chips (Lọc nhanh theo giá / Hot / Bán chạy) */}
-          <div className="flex items-center justify-start sm:justify-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
-            <span className="text-slate-400 font-semibold text-[11px] flex items-center gap-1 pl-1">
-              <SlidersHorizontal className="w-3 h-3" /> Lọc:
-            </span>
-
-            {[
-              { id: "ALL" as const, label: "Tất cả" },
-              { id: "BESTSELLER" as const, label: "⭐ Bán chạy nhất" },
-              { id: "HOT" as const, label: "🔥 Món Hot" },
-              { id: "UNDER_35K" as const, label: "⚡ Dưới 35K" },
-              { id: "FROM_35K_TO_50K" as const, label: "💵 35K - 50K" },
-              { id: "ABOVE_50K" as const, label: "💎 Trên 50K" },
-            ].map((chip) => (
-              <button
-                key={chip.id}
-                onClick={() => setActiveTag(chip.id)}
-                className={`px-3 py-1 rounded-full text-[11px] font-semibold transition cursor-pointer whitespace-nowrap ${
-                  activeTag === chip.id
-                    ? "bg-orange-600 text-white font-bold shadow-sm"
-                    : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                }`}
-              >
-                {chip.label}
-              </button>
-            ))}
-          </div>
         </div>
 
-        {/* Products Count & View Controls */}
-        <div className="flex items-center justify-between text-xs text-slate-500 mb-6 px-1">
+        {/* Products Count Info */}
+        <div className="flex items-center justify-between text-xs text-slate-500 mb-5 px-1">
           <p>
             Tìm thấy <strong className="text-slate-800 font-bold">{filteredProducts.length}</strong> món ăn
-            {viewMode === "loadmore" ? (
-              <span> (Đang hiển thị {Math.min(visibleCount, filteredProducts.length)} món)</span>
-            ) : (
+            {totalPages > 1 && (
               <span> (Trang {currentPage}/{totalPages})</span>
             )}
           </p>
 
-          <div className="flex items-center gap-2">
-            <span className="hidden sm:inline text-slate-400">Chế độ xem:</span>
-            <div className="bg-slate-200/60 p-0.5 rounded-lg flex items-center text-[11px]">
-              <button
-                onClick={() => setViewMode("loadmore")}
-                className={`px-2 py-0.5 rounded-md font-semibold transition cursor-pointer ${
-                  viewMode === "loadmore" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"
-                }`}
-              >
-                Cuộn xem thêm
-              </button>
-              <button
-                onClick={() => setViewMode("pagination")}
-                className={`px-2 py-0.5 rounded-md font-semibold transition cursor-pointer ${
-                  viewMode === "pagination" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"
-                }`}
-              >
-                Số trang
-              </button>
-            </div>
-          </div>
+          <span className="text-[11px] text-slate-400">
+            Hiển thị 16 món/trang
+          </span>
         </div>
 
         {/* Product Grid */}
@@ -262,12 +186,11 @@ export function MenuSection({
           <div className="text-center py-16 bg-white rounded-3xl border border-slate-200/60 max-w-lg mx-auto">
             <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <p className="font-bold text-slate-800 text-base">Không tìm thấy món ăn phù hợp</p>
-            <p className="text-xs text-slate-500 mt-1">Hãy thử tìm với từ khóa khác hoặc bỏ bớt bộ lọc</p>
+            <p className="text-xs text-slate-500 mt-1">Hãy thử tìm với từ khóa khác hoặc đổi danh mục</p>
             <button
               onClick={() => {
                 setSearchQuery("");
                 setSelectedCategory("all");
-                setActiveTag("ALL");
               }}
               className={`mt-4 inline-flex items-center gap-1 text-xs font-bold ${config.colors.accentText} hover:underline cursor-pointer`}
             >
@@ -318,40 +241,38 @@ export function MenuSection({
                   </div>
 
                   {/* Body */}
-                  <div className="p-3 sm:p-4">
+                  <div className="p-3 sm:p-4 pb-2">
                     <h3 className="font-bold text-xs sm:text-sm text-slate-900 leading-snug group-hover:text-orange-600 transition line-clamp-1 mb-1">
                       {product.name}
                     </h3>
 
                     {product.description && (
-                      <p className="text-[11px] text-slate-500 line-clamp-1 mb-2 leading-relaxed">
+                      <p className="text-[11px] text-slate-500 line-clamp-1 mb-1 leading-relaxed">
                         {product.description}
                       </p>
                     )}
-
-                    <div className="flex items-baseline gap-1.5">
-                      <span className={`text-sm sm:text-base font-black ${config.colors.accentText}`}>
-                        {product.price.toLocaleString("vi-VN")}đ
-                      </span>
-                      {product.originalPrice && product.originalPrice > product.price && (
-                        <span className="text-[11px] text-slate-400 line-through">
-                          {product.originalPrice.toLocaleString("vi-VN")}đ
-                        </span>
-                      )}
-                    </div>
                   </div>
                 </div>
 
-                {/* Card Action Footer */}
-                <div className="p-3 sm:p-4 pt-0">
+                {/* Card Action Footer: Price on Left, + Chọn Món Green Button on Right */}
+                <div className="p-3 sm:p-4 pt-2 flex items-center justify-between gap-2 border-t border-slate-100/80">
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm sm:text-base font-black text-[#c2410c] tracking-tight whitespace-nowrap">
+                      {product.price.toLocaleString("vi-VN")}đ
+                    </span>
+                    {product.originalPrice && product.originalPrice > product.price && (
+                      <span className="text-[10px] text-slate-400 line-through -mt-0.5">
+                        {product.originalPrice.toLocaleString("vi-VN")}đ
+                      </span>
+                    )}
+                  </div>
+
                   <button
                     disabled={!product.isAvailable}
                     onClick={() => onOpenCustomize(product)}
-                    className={`w-full inline-flex items-center justify-center gap-1 sm:gap-1.5 ${config.colors.primaryBtn} disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none font-bold py-2 sm:py-2.5 px-2 rounded-xl text-xs transition active:scale-95 cursor-pointer disabled:cursor-not-allowed`}
+                    className="inline-flex items-center justify-center gap-1 bg-[#15803d] hover:bg-[#166534] text-white font-extrabold py-1.5 sm:py-2 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm shadow-xs transition active:scale-95 cursor-pointer whitespace-nowrap shrink-0 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed"
                   >
-                    <ButtonFestiveDecorator />
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Thêm</span>
+                    <span>+ Chọn Món</span>
                   </button>
                 </div>
               </div>
@@ -359,116 +280,62 @@ export function MenuSection({
           </div>
         )}
 
-        {/* ─── PHÂN TRANG & NÚT XEM THÊM (PAGINATION UX) ─── */}
-        {filteredProducts.length > 0 && (
-          <div className="mt-12 text-center space-y-4">
-            {/* Thanh tiến trình xem món */}
-            <div className="max-w-xs mx-auto space-y-1">
-              <div className="flex justify-between text-[11px] text-slate-500 font-medium">
-                <span>
-                  Đang xem:{" "}
-                  <strong className="text-slate-800">
-                    {viewMode === "loadmore"
-                      ? Math.min(visibleCount, filteredProducts.length)
-                      : Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)}
-                  </strong>
-                </span>
-                <span>Tổng: {filteredProducts.length} món</span>
-              </div>
-              <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-orange-500 to-amber-500 transition-all duration-300 rounded-full"
-                  style={{
-                    width: `${
-                      viewMode === "loadmore"
-                        ? (Math.min(visibleCount, filteredProducts.length) / filteredProducts.length) * 100
-                        : (Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length) /
-                            filteredProducts.length) *
-                          100
-                    }%`,
-                  }}
-                />
-              </div>
-            </div>
+        {/* ─── BỘ PHÂN TRANG THEO SỐ TRANG GỌN ĐẸP ─── */}
+        {filteredProducts.length > 0 && totalPages > 1 && (
+          <div className="mt-10 flex items-center justify-center gap-1.5 pt-2">
+            {/* Nút Trước */}
+            <button
+              disabled={currentPage === 1}
+              onClick={() => handlePageChange(currentPage - 1)}
+              className="w-9 h-9 rounded-xl border border-slate-200 bg-white text-slate-700 flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition cursor-pointer"
+              title="Trang trước"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
 
-            {/* CHẾ ĐỘ 1: XEM THÊM (LOAD MORE) */}
-            {viewMode === "loadmore" && (
-              <div>
-                {visibleCount < filteredProducts.length ? (
-                  <button
-                    onClick={handleLoadMore}
-                    className="inline-flex items-center gap-2 bg-white hover:bg-orange-50 border-2 border-orange-500 text-orange-600 font-extrabold text-xs sm:text-sm py-3 px-8 rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
-                  >
-                    <span>Xem Thêm 16 Món Khác</span>
-                    <ArrowDown className="w-4 h-4 animate-bounce" />
-                  </button>
-                ) : (
-                  <p className="text-xs text-slate-400 font-medium pt-2">
-                    🎉 Bạn đã xem toàn bộ {filteredProducts.length} món trong danh mục này!
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* CHẾ ĐỘ 2: BỘ PHÂN TRANG THEO SỐ (NUMBERED PAGINATION) */}
-            {viewMode === "pagination" && totalPages > 1 && (
-              <div className="flex items-center justify-center gap-1.5 pt-2">
-                {/* Nút Trước */}
-                <button
-                  disabled={currentPage === 1}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  className="w-9 h-9 rounded-xl border border-slate-200 bg-white text-slate-700 flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition cursor-pointer"
-                  title="Trang trước"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-
-                {/* Các số trang */}
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                  const isActive = currentPage === page;
-                  // Chỉ hiện các trang gần trang hiện tại để không bị vỡ layout
-                  if (
-                    totalPages > 7 &&
-                    Math.abs(page - currentPage) > 2 &&
-                    page !== 1 &&
-                    page !== totalPages
-                  ) {
-                    if (Math.abs(page - currentPage) === 3) {
-                      return (
-                        <span key={page} className="w-6 text-center text-slate-400 text-xs">
-                          ...
-                        </span>
-                      );
-                    }
-                    return null;
-                  }
-
+            {/* Các số trang */}
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+              const isActive = currentPage === page;
+              if (
+                totalPages > 7 &&
+                Math.abs(page - currentPage) > 2 &&
+                page !== 1 &&
+                page !== totalPages
+              ) {
+                if (Math.abs(page - currentPage) === 3) {
                   return (
-                    <button
-                      key={page}
-                      onClick={() => handlePageChange(page)}
-                      className={`w-9 h-9 rounded-xl text-xs font-bold transition cursor-pointer ${
-                        isActive
-                          ? "bg-slate-900 text-white shadow-md scale-105"
-                          : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
-                      }`}
-                    >
-                      {page}
-                    </button>
+                    <span key={page} className="w-6 text-center text-slate-400 text-xs">
+                      ...
+                    </span>
                   );
-                })}
+                }
+                return null;
+              }
 
-                {/* Nút Sau */}
+              return (
                 <button
-                  disabled={currentPage === totalPages}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  className="w-9 h-9 rounded-xl border border-slate-200 bg-white text-slate-700 flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition cursor-pointer"
-                  title="Trang sau"
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  className={`w-9 h-9 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    isActive
+                      ? "bg-slate-900 text-white shadow-md scale-105"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                  }`}
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  {page}
                 </button>
-              </div>
-            )}
+              );
+            })}
+
+            {/* Nút Sau */}
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => handlePageChange(currentPage + 1)}
+              className="w-9 h-9 rounded-xl border border-slate-200 bg-white text-slate-700 flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition cursor-pointer"
+              title="Trang sau"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         )}
       </div>

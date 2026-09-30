@@ -36,7 +36,15 @@ export async function GET(request: Request) {
       where: { isAvailable: true },
     });
 
-    return NextResponse.json({ success: true, data: { products, toppings } });
+    return NextResponse.json(
+      { success: true, data: { products, toppings } },
+      {
+        headers: {
+          "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+          Pragma: "no-cache",
+        },
+      }
+    );
   } catch (error) {
     console.error("Error fetching products:", error);
     return NextResponse.json(
@@ -71,14 +79,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: origPriceCheck.error }, { status: 400 });
     }
 
-    // Check banner limit if isOnBanner is true
+    // Check banner limit if isOnBanner is true (max 8)
+    const MAX_BANNER = 8;
     if (Boolean(isOnBanner)) {
       const bannerCount = await prisma.product.count({
         where: { isOnBanner: true },
       });
-      if (bannerCount >= 5) {
+      if (bannerCount >= MAX_BANNER) {
         return NextResponse.json(
-          { success: false, error: "Đã đạt giới hạn tối đa 5 món hiển thị trên Banner. Vui lòng bỏ chọn món khác trước!" },
+          {
+            success: false,
+            error: `Đã đạt giới hạn tối đa ${MAX_BANNER} món hiển thị trên Banner. Vui lòng chuyển sang tab "🎯 Banner" để bỏ chọn món khác trước!`,
+          },
           { status: 400 }
         );
       }
@@ -88,6 +100,13 @@ export async function POST(request: Request) {
     const toppingsCheck = validateToppingsJson(toppingsJson);
     if (!toppingsCheck.valid) {
       return NextResponse.json({ success: false, error: toppingsCheck.error }, { status: 400 });
+    }
+
+    let validCategoryId = categoryId;
+    const categoryExists = await prisma.category.findUnique({ where: { id: categoryId } });
+    if (!categoryExists) {
+      const fallbackCat = await prisma.category.findFirst({ orderBy: { sortOrder: "asc" } });
+      if (fallbackCat) validCategoryId = fallbackCat.id;
     }
 
     const productSlug = slug || name.toLowerCase().replace(/[^a-z0-9]/g, "-") + "-" + Date.now();
@@ -104,7 +123,7 @@ export async function POST(request: Request) {
         isBestseller: Boolean(isBestseller),
         isOnBanner: Boolean(isOnBanner),
         isAvailable: isAvailable !== undefined ? Boolean(isAvailable) : true,
-        categoryId,
+        categoryId: validCategoryId,
         toppingsJson: toppingsCheck.jsonString,
       },
     });
@@ -112,8 +131,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, data: product });
   } catch (error) {
     console.error("Error creating product:", error);
+    const errorMsg = error instanceof Error ? error.message : "Không thể thêm món ăn mới";
     return NextResponse.json(
-      { success: false, error: "Không thể thêm món ăn mới" },
+      { success: false, error: errorMsg },
       { status: 500 }
     );
   }

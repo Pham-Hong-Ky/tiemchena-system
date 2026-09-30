@@ -38,6 +38,8 @@ model Product {
   orderItems    OrderItem[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+
+  @@index([categoryId, isAvailable])
 }
 
 model Topping {
@@ -65,6 +67,9 @@ model Order {
   items           OrderItem[]
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+
+  @@index([customerPhone])
+  @@index([orderStatus, createdAt])
 }
 
 model OrderItem {
@@ -79,6 +84,8 @@ model OrderItem {
   toppingsJson String?  // JSON array of selected toppings
   itemTotal    Float
   note         String?
+
+  @@index([orderId])
 }
 
 model Voucher {

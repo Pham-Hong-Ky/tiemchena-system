@@ -137,13 +137,18 @@ export async function POST(request: Request) {
       .map((item: any) => item.id || item.productId)
       .filter((id: any) => typeof id === "string" && id.length > 0);
 
-    const dbProducts = await prisma.product.findMany({
-      where: {
-        id: { in: productIds },
-      },
-    });
+    // Lấy thông tin sản phẩm và toppings từ Database để xác thực giá chuẩn 100%
+    const [dbProducts, dbToppings] = await Promise.all([
+      prisma.product.findMany({
+        where: {
+          id: { in: productIds },
+        },
+      }),
+      prisma.topping.findMany(),
+    ]);
 
     const productMap = new Map(dbProducts.map((p) => [p.id, p]));
+    const toppingMap = new Map(dbToppings.map((t) => [t.id, t]));
 
     let totalAmount = 0;
     const orderItemsData = [];
@@ -152,23 +157,50 @@ export async function POST(request: Request) {
       const pId = item.id || item.productId;
       const dbProduct = pId ? productMap.get(pId) : null;
 
+      // Chống giả mạo: Bắt buộc sản phẩm phải tồn tại trong cơ sở dữ liệu
+      if (!dbProduct) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Món "${item.name || "trong giỏ hàng"}" không tồn tại hoặc đã ngừng kinh doanh. Vui lòng tải lại trang.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Kiểm tra trạng thái mở bán
+      if (!dbProduct.isAvailable) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Món "${dbProduct.name}" hiện đang tạm hết hàng. Quý khách vui lòng chọn món khác.`,
+          },
+          { status: 400 }
+        );
+      }
+
       // Đảm bảo số lượng hợp lệ (từ 1 đến 99)
       const qty = Math.min(99, Math.max(1, parseInt(item.quantity) || 1));
 
-      // Lấy giá chuẩn từ Database nếu tìm thấy sản phẩm, ngược lại dùng giá hợp lệ
-      const verifiedPrice = dbProduct ? dbProduct.price : Math.max(0, parseFloat(item.price) || 0);
-      const verifiedName = dbProduct ? dbProduct.name : (item.name || "Món ăn");
+      // Tuyệt đối sử dụng giá niêm yết từ Database máy chủ
+      const verifiedPrice = dbProduct.price;
+      const verifiedName = dbProduct.name;
 
-      // Tính tổng tiền toppings nếu có
+      // Xác thực toppings từ Database
       let toppingSum = 0;
-      let validToppings = [];
+      const validToppings = [];
       if (item.selectedToppings && Array.isArray(item.selectedToppings)) {
-        validToppings = item.selectedToppings.map((t: any) => ({
-          id: t.id,
-          name: t.name,
-          price: Math.max(0, parseFloat(t.price) || 0),
-        }));
-        toppingSum = validToppings.reduce((sum: number, t: any) => sum + t.price, 0);
+        for (const t of item.selectedToppings) {
+          const dbTop = t.id ? toppingMap.get(t.id) : null;
+          const topPrice = dbTop ? dbTop.price : Math.max(0, parseFloat(t.price) || 0);
+          const topName = dbTop ? dbTop.name : (t.name || "Topping");
+          validToppings.push({
+            id: t.id || `top-${Date.now()}`,
+            name: topName,
+            price: topPrice,
+          });
+          toppingSum += topPrice;
+        }
       }
 
       const unitTotal = verifiedPrice + toppingSum;
@@ -176,7 +208,7 @@ export async function POST(request: Request) {
       totalAmount += lineTotal;
 
       orderItemsData.push({
-        productId: dbProduct ? dbProduct.id : null,
+        productId: dbProduct.id,
         productName: verifiedName,
         productPrice: verifiedPrice,
         quantity: qty,

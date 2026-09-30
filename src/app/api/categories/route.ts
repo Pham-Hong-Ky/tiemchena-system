@@ -17,7 +17,15 @@ export async function GET(request: Request) {
       },
     });
 
-    return NextResponse.json({ success: true, data: categories });
+    return NextResponse.json(
+      { success: true, data: categories },
+      {
+        headers: {
+          "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+          Pragma: "no-cache",
+        },
+      }
+    );
   } catch (error) {
     console.error("GET categories error:", error);
     return NextResponse.json({ success: false, error: "Không thể lấy danh mục" }, { status: 500 });

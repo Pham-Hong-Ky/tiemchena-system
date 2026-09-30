@@ -13,10 +13,8 @@ interface SignatureDishConfig {
   badgeIcon: LucideIcon;
   badgeLabel: string;
   badgeColor: string;
-  rating: string;
   gradientClass: string;
   borderClass: string;
-  tags: string[];
 }
 
 interface SignatureDishCardProps {
@@ -33,10 +31,8 @@ function SignatureDishCard({ product, config, onAdd }: SignatureDishCardProps) {
     badgeIcon: BadgeIcon,
     badgeLabel,
     badgeColor,
-    rating,
     gradientClass,
     borderClass,
-    tags,
   } = config;
 
   return (
@@ -59,41 +55,28 @@ function SignatureDishCard({ product, config, onAdd }: SignatureDishCardProps) {
           >
             <BadgeIcon className="w-3.5 h-3.5" /> {badgeLabel}
           </div>
-          <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-bold text-slate-800 flex items-center gap-1 shadow-sm">
-            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> {rating}
-          </div>
         </div>
 
-        {/* Title & Price */}
-        <div className="flex items-start justify-between gap-2 mb-2">
+        {/* Title */}
+        <div className="mb-2">
           <h3 className="font-extrabold text-xl text-slate-900 leading-snug">{product.name}</h3>
-          <span className={`font-black text-xl ${themeConfig.colors.accentText} shrink-0`}>
-            {product.price.toLocaleString("vi-VN")}đ
-          </span>
         </div>
 
         <p className="text-sm text-slate-600 mb-4 leading-relaxed line-clamp-3">
           {product.description}
         </p>
-
-        {/* Tags */}
-        <div className="flex flex-wrap gap-2 text-xs font-medium text-slate-700 mb-6">
-          {tags.map((tag) => (
-            <span key={tag} className="bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-sm">
-              {tag}
-            </span>
-          ))}
-        </div>
       </div>
 
-      {/* Actions */}
-      <div className="pt-2">
+      {/* Actions: Price on Left, + Chọn Món Green Button on Right */}
+      <div className="pt-3 flex items-center justify-between gap-3 border-t border-slate-100">
+        <span className="font-black text-xl sm:text-2xl text-[#c2410c] shrink-0">
+          {product.price.toLocaleString("vi-VN")}đ
+        </span>
         <button
           onClick={onAdd}
-          className={`w-full inline-flex items-center justify-center gap-2 ${themeConfig.colors.primaryBtn} py-3 px-4 rounded-xl font-bold cursor-pointer transition active:scale-95 shadow-md`}
+          className="inline-flex items-center justify-center gap-1.5 bg-[#15803d] hover:bg-[#166534] text-white py-2.5 px-5 rounded-xl font-extrabold text-sm sm:text-base cursor-pointer transition active:scale-95 shadow-md"
         >
-          <ButtonFestiveDecorator />
-          <Plus className="w-4 h-4" /> Thêm Vào Giỏ
+          <span>+ Chọn Món</span>
         </button>
       </div>
     </div>
@@ -106,20 +89,16 @@ const NEM_NUONG_CONFIG: SignatureDishConfig = {
   badgeIcon: Flame,
   badgeLabel: "BEST-SELLER SỐ 1",
   badgeColor: "bg-red-600",
-  rating: "4.9 (500+ đánh giá)",
   gradientClass: "bg-gradient-to-br from-orange-50/50 to-amber-50/30",
   borderClass: "border border-orange-200/70",
-  tags: ["🥢 Kèm bánh tráng & rau tươi", "🥣 Sốt chấm thịt băm độc quyền"],
 };
 
 const CHE_XOAI_CONFIG: SignatureDishConfig = {
   badgeIcon: Heart,
-  badgeLabel: "CHÈ HOT TRIỆU VIEW",
+  badgeLabel: "Món chè tươi máy",
   badgeColor: "bg-amber-500",
-  rating: "5.0 (420+ đánh giá)",
   gradientClass: "bg-gradient-to-br from-amber-50/50 to-yellow-50/30",
   borderClass: "border border-amber-200/70",
-  tags: ["🥭 Xoài chín ngọt thanh", "🍮 Caramen mềm mướt béo ngậy"],
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────────

@@ -44,10 +44,10 @@ export function HeroBanner({ products = [], onSelectTag }: HeroBannerProps) {
 
   const bannerProducts =
     selectedBanner.length > 0
-      ? selectedBanner.slice(0, 5)
+      ? selectedBanner.slice(0, 8)
       : bestsellers.length > 0
-      ? bestsellers.slice(0, 5)
-      : availableProducts.slice(0, 5);
+      ? bestsellers.slice(0, 8)
+      : availableProducts.slice(0, 8);
 
   const badgeColors = ["bg-orange-600", "bg-red-600", "bg-amber-500", "bg-emerald-600", "bg-purple-600"];
 

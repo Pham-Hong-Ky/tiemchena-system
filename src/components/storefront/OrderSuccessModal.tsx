@@ -31,6 +31,11 @@ export function OrderSuccessModal({
 }: OrderSuccessModalProps) {
   const { config } = useTheme();
   const [copiedText, setCopiedText] = useState("");
+  const [localQr, setLocalQr] = useState<string>("");
+
+  const bankId = process.env.NEXT_PUBLIC_VIETQR_BANK_ID || "MB";
+  const accountNo = process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NO || "0986479285";
+  const accountName = process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NAME || "TIEM CHE NA";
 
   useEffect(() => {
     if (order) {
@@ -44,8 +49,18 @@ export function OrderSuccessModal({
       } catch {
         // ignore
       }
+
+      // Generate offline fallback QR code if VietQR
+      if (order.paymentMethod === "VIETQR") {
+        const amount = order.finalAmount;
+        const memo = `${order.orderCode} ${order.customerPhone}`;
+        const transferInfo = `2. STK: ${accountNo} (${bankId}) - So tien: ${amount}d - ND: ${memo}`;
+        QRCode.toDataURL(transferInfo, { width: 240, margin: 1 })
+          .then((url) => setLocalQr(url))
+          .catch(() => {});
+      }
     }
-  }, [order]);
+  }, [order, bankId, accountNo]);
 
   if (!order) return null;
 
@@ -56,23 +71,8 @@ export function OrderSuccessModal({
   };
 
   const isVietQR = order.paymentMethod === "VIETQR";
-  const bankId = process.env.NEXT_PUBLIC_VIETQR_BANK_ID || "MB";
-  const accountNo = process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NO || "0986479285";
-  const accountName = process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NAME || "TIEM CHE NA";
   const amount = order.finalAmount;
   const memo = `${order.orderCode} ${order.customerPhone}`;
-
-  const [localQr, setLocalQr] = useState<string>("");
-
-  useEffect(() => {
-    if (order && order.paymentMethod === "VIETQR") {
-      // Offline fallback QR code
-      const transferInfo = `2. STK: ${accountNo} (${bankId}) - So tien: ${amount}d - ND: ${memo}`;
-      QRCode.toDataURL(transferInfo, { width: 240, margin: 1 })
-        .then((url) => setLocalQr(url))
-        .catch(() => {});
-    }
-  }, [order, bankId, accountNo, amount, memo]);
 
   const qrDataUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(
     memo
