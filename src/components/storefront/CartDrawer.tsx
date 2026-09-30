@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   X,
   Trash2,
@@ -36,6 +37,7 @@ interface CartDrawerProps {
 }
 
 export function CartDrawer({ onOrderSuccess, onEditItem }: CartDrawerProps) {
+  const router = useRouter();
   const { config, theme } = useTheme();
   const {
     cart,
@@ -68,7 +70,7 @@ export function CartDrawer({ onOrderSuccess, onEditItem }: CartDrawerProps) {
       if (menuSection) {
         menuSection.scrollIntoView({ behavior: "smooth" });
       } else {
-        window.location.href = "/#menu";
+        router.push("/#menu");
       }
     }, 120);
   };

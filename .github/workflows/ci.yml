@@ -1,0 +1,53 @@
+name: CI - Kiểm tra chất lượng & Build tự động
+
+on:
+  push:
+    branches: [main, deploy]
+  pull_request:
+    branches: [main, deploy]
+
+jobs:
+  validate-and-build:
+    name: Typecheck, Lint & Build
+    runs-on: ubuntu-latest
+
+    env:
+      # Dummy/Build-time environment variables for Next.js build & Prisma
+      DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy?sslmode=require"
+      CLOUDINARY_CLOUD_NAME: "vhguqaqt"
+      CLOUDINARY_API_KEY: "672643314349432"
+      CLOUDINARY_API_SECRET: "dummy_secret"
+      ADMIN_USERNAME: "admin"
+      ADMIN_PASSWORD: "dummy_password"
+      ADMIN_SECRET: "dummy_admin_secret_key"
+      NEXT_PUBLIC_VIETQR_BANK_ID: "MB"
+      NEXT_PUBLIC_VIETQR_ACCOUNT_NO: "0986479285"
+      NEXT_PUBLIC_VIETQR_ACCOUNT_NAME: "TIEM CHE NA"
+
+    steps:
+      - name: 📥 Checkout mã nguồn
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Cài đặt Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: 📦 Cài đặt thư viện dependencies
+        run: npm ci
+
+      - name: 🔍 Kiểm tra cấu trúc Prisma Schema
+        run: npx prisma validate
+
+      - name: ⚙️ Tạo Prisma Client
+        run: npx prisma generate
+
+      - name: 🧹 Chạy ESLint kiểm tra cú pháp code
+        run: npm run lint
+
+      - name: 🔬 Kiểm tra kiểu TypeScript (Type-check)
+        run: npx tsc --noEmit
+
+      - name: 🏗️ Chạy Next.js Production Build
+        run: npm run build
