@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import confetti from "canvas-confetti";
+import QRCode from "qrcode";
 import {
   CheckCircle,
   X,
@@ -61,6 +62,18 @@ export function OrderSuccessModal({
   const amount = order.finalAmount;
   const memo = `${order.orderCode} ${order.customerPhone}`;
 
+  const [localQr, setLocalQr] = useState<string>("");
+
+  useEffect(() => {
+    if (order && order.paymentMethod === "VIETQR") {
+      // Offline fallback QR code
+      const transferInfo = `2. STK: ${accountNo} (${bankId}) - So tien: ${amount}d - ND: ${memo}`;
+      QRCode.toDataURL(transferInfo, { width: 240, margin: 1 })
+        .then((url) => setLocalQr(url))
+        .catch(() => {});
+    }
+  }, [order, bankId, accountNo, amount, memo]);
+
   const qrDataUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(
     memo
   )}&accountName=${encodeURIComponent(accountName)}`;
@@ -98,11 +111,16 @@ export function OrderSuccessModal({
 
               {/* QR Image */}
               <div className="bg-white p-3 rounded-2xl shadow-sm inline-block border border-orange-100 max-w-[220px]">
-                {qrDataUrl ? (
+                {qrDataUrl || localQr ? (
                   <img
                     src={qrDataUrl}
                     alt="VietQR Tiệm Chè Na"
                     className="w-full h-auto rounded-lg"
+                    onError={(e) => {
+                      if (localQr) {
+                        (e.target as HTMLImageElement).src = localQr;
+                      }
+                    }}
                   />
                 ) : (
                   <div className="w-44 h-44 bg-slate-100 animate-pulse rounded-lg" />

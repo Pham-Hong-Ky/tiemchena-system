@@ -5,6 +5,8 @@ import { CartProvider, CartItem } from "@/context/CartContext";
 import { Header } from "@/components/storefront/Header";
 import { HeroBanner } from "@/components/storefront/HeroBanner";
 import { SignatureDishes } from "@/components/storefront/SignatureDishes";
+import { ExclusiveSetsSection } from "@/components/storefront/ExclusiveSetsSection";
+import { FullMenuGallerySection } from "@/components/storefront/FullMenuGallerySection";
 import { MenuSection } from "@/components/storefront/MenuSection";
 import { ProductCustomizeModal } from "@/components/storefront/ProductCustomizeModal";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
@@ -113,6 +115,9 @@ export default function Home() {
               {/* Hero Banner */}
               <HeroBanner products={products} onSelectTag={handleSelectHeroTag} />
 
+              {/* Hai Bộ Tứ Món Độc Quyền Tiệm Chè Na */}
+              <ExclusiveSetsSection onSelectCategory={(slug) => setSelectedCategory(slug)} />
+
               {/* 2 Signature Bestseller Dishes */}
               <SignatureDishes
                 products={products}
@@ -122,7 +127,7 @@ export default function Home() {
                 }}
               />
 
-              {/* Main Full Menu */}
+              {/* Main Full Menu with Smart Pagination */}
               <MenuSection
                 categories={categories}
                 products={products}
@@ -135,6 +140,9 @@ export default function Home() {
                   setCustomizingProduct(p);
                 }}
               />
+
+              {/* Bảng Menu Gốc Đầy Đủ & Chi Tiết Từng Topping */}
+              <FullMenuGallerySection />
 
               {/* Trust & Guarantees */}
               <TrustSection />
