@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   Tag,
   Plus,
@@ -60,6 +61,7 @@ function renderBadgeIcon(iconName: string) {
 }
 
 export default function AdminTagsPage() {
+  const [mounted, setMounted] = useState(false);
   const [tags, setTags] = useState<TagType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -95,6 +97,7 @@ export default function AdminTagsPage() {
   };
 
   useEffect(() => {
+    setMounted(true);
     loadData();
   }, []);
 
@@ -395,8 +398,12 @@ export default function AdminTagsPage() {
       </div>
 
       {/* Modal Create / Edit Tag */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      {isModalOpen && mounted &&
+        createPortal(
+          <div
+            style={{ zIndex: 99999 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          >
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-lg font-black text-slate-900">
@@ -569,7 +576,8 @@ export default function AdminTagsPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

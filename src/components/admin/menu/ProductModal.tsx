@@ -15,6 +15,7 @@ import {
   Crop,
   RefreshCw,
   Trash2,
+  Maximize2,
 } from "lucide-react";
 import { ProductType, CategoryType, ProductOptionType, ToppingType } from "@/types";
 import { ImageCropperModal } from "@/components/ui/ImageCropperModal";
@@ -48,6 +49,7 @@ export function ProductModal({
   const [formCategoryId, setFormCategoryId] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formImage, setFormImage] = useState("");
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
   const [formIsHot, setFormIsHot] = useState(false);
   const [formIsBestseller, setFormIsBestseller] = useState(false);
   const [formIsOnBanner, setFormIsOnBanner] = useState(false);
@@ -68,6 +70,22 @@ export function ProductModal({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Update image dimensions whenever formImage changes
+  useEffect(() => {
+    if (!formImage) {
+      setImageDimensions(null);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      setImageDimensions({
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+      });
+    };
+    img.src = formImage;
+  }, [formImage]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -293,7 +311,10 @@ export function ProductModal({
   return (
     <>
       {createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+        <div
+          style={{ zIndex: 99999 }}
+          className="fixed inset-0 flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+        >
           <div className="bg-white w-full max-w-5xl rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="p-4 sm:p-5 bg-slate-900 text-white flex items-center justify-between">
@@ -344,7 +365,6 @@ export function ProductModal({
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="font-bold text-slate-700">Giá bán (VNĐ) *</label>
-                        <span className="text-[10px] text-orange-600 font-extrabold">1k - 500k</span>
                       </div>
                       <input
                         type="number"
@@ -362,7 +382,6 @@ export function ProductModal({
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="font-bold text-slate-700">Giá gốc gạch chân</label>
-                        <span className="text-[10px] text-slate-400 font-semibold">1k - 500k</span>
                       </div>
                       <input
                         type="number"
@@ -444,36 +463,60 @@ export function ProductModal({
                           alt="Ảnh món ăn"
                           className="w-full h-full object-cover"
                         />
+                        {imageDimensions && (
+                          <div className="absolute bottom-1 right-1 bg-black/80 backdrop-blur-xs text-white text-[10px] font-mono font-bold px-1.5 py-0.5 rounded shadow">
+                            {imageDimensions.width}×{imageDimensions.height}
+                          </div>
+                        )}
                       </div>
 
-                      <div className="flex-1 flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={handleOpenCropperForCurrent}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold text-xs shadow-xs transition cursor-pointer"
-                        >
-                          <Crop className="w-3.5 h-3.5" />
-                          <span>Căn chỉnh lại góc ảnh</span>
-                        </button>
+                      <div className="flex-1 flex flex-col justify-center gap-2 w-full">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                            Kích thước ảnh:
+                          </span>
+                          {imageDimensions ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 font-mono font-extrabold text-xs">
+                              <Maximize2 className="w-3.5 h-3.5 text-orange-500" />
+                              {imageDimensions.width} × {imageDimensions.height} px
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-400">Đang đọc thông tin ảnh...</span>
+                          )}
+                        </div>
 
-                        <button
-                          type="button"
-                          onClick={triggerFileInput}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs transition cursor-pointer"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
-                          <span>Đổi ảnh khác</span>
-                        </button>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handleOpenCropperForCurrent}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold text-xs shadow-xs transition cursor-pointer"
+                          >
+                            <Crop className="w-3.5 h-3.5" />
+                            <span>Căn chỉnh lại góc ảnh</span>
+                          </button>
 
-                        <button
-                          type="button"
-                          onClick={() => setFormImage("")}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-xs transition cursor-pointer"
-                          title="Xóa ảnh"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Xóa</span>
-                        </button>
+                          <button
+                            type="button"
+                            onClick={triggerFileInput}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs transition cursor-pointer"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+                            <span>Đổi ảnh khác</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormImage("");
+                              setImageDimensions(null);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-xs transition cursor-pointer"
+                            title="Xóa ảnh"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Xóa</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}

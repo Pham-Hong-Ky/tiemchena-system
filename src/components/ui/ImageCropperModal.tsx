@@ -39,6 +39,7 @@ export function ImageCropperModal({
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -55,6 +56,7 @@ export function ImageCropperModal({
     setRotation(0);
     setOffset({ x: 0, y: 0 });
     setImageLoaded(false);
+    setImageDimensions(null);
 
     const img = new Image();
     const isRemote = imageSrc.startsWith("http://") || imageSrc.startsWith("https://");
@@ -66,6 +68,7 @@ export function ImageCropperModal({
 
     img.onload = () => {
       imageRef.current = img;
+      setImageDimensions({ width: img.naturalWidth || img.width, height: img.naturalHeight || img.height });
       setImageLoaded(true);
     };
 
@@ -74,6 +77,7 @@ export function ImageCropperModal({
       const fallbackImg = new Image();
       fallbackImg.onload = () => {
         imageRef.current = fallbackImg;
+        setImageDimensions({ width: fallbackImg.naturalWidth || fallbackImg.width, height: fallbackImg.naturalHeight || fallbackImg.height });
         setImageLoaded(true);
       };
       fallbackImg.onerror = () => {
@@ -323,9 +327,16 @@ export function ImageCropperModal({
               <Crop className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-base sm:text-lg text-white">
-                Căn Chỉnh Hình Ảnh Món Ăn
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-extrabold text-base sm:text-lg text-white">
+                  Căn Chỉnh Hình Ảnh Món Ăn
+                </h3>
+                {imageDimensions && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-400 border border-orange-500/30 font-mono font-bold text-xs">
+                    {imageDimensions.width} × {imageDimensions.height} px
+                  </span>
+                )}
+              </div>
               <p className="text-[11px] text-slate-400">
                 Kéo di chuyển, phóng to hoặc xoay để ảnh vừa vặn chuẩn tỉ lệ thẻ 4:3
               </p>
@@ -364,9 +375,15 @@ export function ImageCropperModal({
                   isDragging ? "cursor-grabbing" : "cursor-grab"
                 }`}
               />
-              <div className="absolute top-2 left-2 pointer-events-none bg-black/70 text-[10px] font-bold text-orange-400 px-2 py-0.5 rounded-md backdrop-blur-xs flex items-center gap-1">
+              <div className="absolute top-2 left-2 pointer-events-none bg-black/75 text-[10px] font-bold text-orange-400 px-2 py-0.5 rounded-md backdrop-blur-xs flex items-center gap-1 shadow">
                 <Move className="w-3 h-3" /> Kéo để di chuyển
               </div>
+              {imageDimensions && (
+                <div className="absolute top-2 right-2 pointer-events-none bg-black/85 text-[10px] font-mono font-bold text-white px-2 py-0.5 rounded-md backdrop-blur-xs border border-white/10 flex items-center gap-1 shadow">
+                  <span className="text-slate-400 font-sans">Ảnh gốc:</span>
+                  <span className="text-orange-400">{imageDimensions.width}×{imageDimensions.height} px</span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -440,7 +457,7 @@ export function ImageCropperModal({
             title="Sử dụng ảnh nguyên bản không cần cắt chỉnh"
           >
             <ImageIcon className="w-3.5 h-3.5 text-slate-400" />
-            <span>Dùng ảnh gốc</span>
+            <span>Dùng ảnh gốc {imageDimensions ? `(${imageDimensions.width}×${imageDimensions.height})` : ""}</span>
           </button>
 
           <div className="flex items-center gap-2">
@@ -466,7 +483,7 @@ export function ImageCropperModal({
               ) : (
                 <>
                   <Check className="w-4 h-4" />
-                  <span>Áp Dụng Cắt Ảnh</span>
+                  <span>Áp Dụng Cắt Ảnh (800×600)</span>
                 </>
               )}
             </button>

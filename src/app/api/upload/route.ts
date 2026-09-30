@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { v2 as cloudinary } from "cloudinary";
 import { requireAdmin } from "@/lib/apiAuth";
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
@@ -54,6 +59,7 @@ export async function POST(request: Request) {
     }
 
     // 3. Kiểm tra extension của file
+    const path = await import("path");
     const ext = path.extname(file.name).toLowerCase();
     if (!ALLOWED_EXTENSIONS.has(ext)) {
       return NextResponse.json(
@@ -65,28 +71,29 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Ensure uploads directory exists
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadsDir, { recursive: true });
+    // Upload lên Cloudinary
+    const result = await new Promise<{ secure_url: string; public_id: string }>(
+      (resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(
+            {
+              folder: "tiemchena/products",
+              resource_type: "image",
+              transformation: [{ quality: "auto", fetch_format: "auto" }],
+            },
+            (error, result) => {
+              if (error || !result) reject(error ?? new Error("Upload failed"));
+              else resolve(result as { secure_url: string; public_id: string });
+            }
+          )
+          .end(buffer);
+      }
+    );
 
-    // Clean file base name and create unique filename
-    const baseName = path
-      .basename(file.name, ext)
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "-")
-      .replace(/-+/g, "-")
-      .slice(0, 50);
-
-    const uniqueFileName = `${Date.now()}-${baseName || "image"}${ext}`;
-    const filePath = path.join(uploadsDir, uniqueFileName);
-
-    await writeFile(filePath, buffer);
-
-    const fileUrl = `/uploads/${uniqueFileName}`;
     return NextResponse.json({
       success: true,
-      url: fileUrl,
-      fileName: uniqueFileName,
+      url: result.secure_url,
+      publicId: result.public_id,
     });
   } catch (error) {
     console.error("Upload error:", error);
@@ -96,3 +103,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

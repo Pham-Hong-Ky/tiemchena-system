@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Printer } from "lucide-react";
 import { OrderType } from "@/types";
 
@@ -10,14 +11,23 @@ interface PrintBillModalProps {
 }
 
 export function PrintBillModal({ order, onClose }: PrintBillModalProps) {
-  if (!order) return null;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!order || !mounted) return null;
 
   const handlePrint = () => {
     window.print();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+  return createPortal(
+    <div
+      style={{ zIndex: 99999 }}
+      className="fixed inset-0 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+    >
       <div className="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
         {/* Modal Top Bar */}
         <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
@@ -149,6 +159,7 @@ export function PrintBillModal({ order, onClose }: PrintBillModalProps) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

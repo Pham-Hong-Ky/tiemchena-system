@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   FolderTree,
   Plus,
@@ -21,6 +22,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { toast } from "@/context/ToastContext";
 
 export default function AdminCategoriesPage() {
+  const [mounted, setMounted] = useState(false);
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,8 +33,6 @@ export default function AdminCategoriesPage() {
 
   // Form state
   const [formName, setFormName] = useState("");
-  const [formIcon, setFormIcon] = useState("Utensils");
-  const [formSortOrder, setFormSortOrder] = useState("0");
   const [formIsActive, setFormIsActive] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -50,14 +50,13 @@ export default function AdminCategoriesPage() {
   };
 
   useEffect(() => {
+    setMounted(true);
     loadData();
   }, []);
 
   const openCreateModal = () => {
     setEditingCat(null);
     setFormName("");
-    setFormIcon("Utensils");
-    setFormSortOrder(String(categories.length + 1));
     setFormIsActive(true);
     setErrorMsg("");
     setIsModalOpen(true);
@@ -66,8 +65,6 @@ export default function AdminCategoriesPage() {
   const openEditModal = (cat: CategoryType) => {
     setEditingCat(cat);
     setFormName(cat.name);
-    setFormIcon(cat.icon || "Utensils");
-    setFormSortOrder(String(cat.sortOrder));
     setFormIsActive(cat.isActive);
     setErrorMsg("");
     setIsModalOpen(true);
@@ -87,15 +84,11 @@ export default function AdminCategoriesPage() {
         await updateCategory({
           id: editingCat.id,
           name: formName.trim(),
-          icon: formIcon.trim(),
-          sortOrder: parseInt(formSortOrder) || 0,
           isActive: formIsActive,
         });
       } else {
         await createCategory({
           name: formName.trim(),
-          icon: formIcon.trim(),
-          sortOrder: parseInt(formSortOrder) || 0,
           isActive: formIsActive,
         });
       }
@@ -157,7 +150,7 @@ export default function AdminCategoriesPage() {
             <span>Quản Lý Danh Mục Món Ăn</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Phân loại thực đơn, kiểm soát số lượng món và thứ tự hiển thị trên trang chủ
+            Phân loại thực đơn và kiểm soát số lượng món hiển thị trên trang chủ
           </p>
         </div>
         <button
@@ -237,9 +230,7 @@ export default function AdminCategoriesPage() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3.5 px-4">Thứ Tự</th>
                   <th className="py-3.5 px-4">Tên Danh Mục</th>
-                  <th className="py-3.5 px-4">Đường Dẫn (Slug)</th>
                   <th className="py-3.5 px-4">Số Lượng Món</th>
                   <th className="py-3.5 px-4">Trạng Thái</th>
                   <th className="py-3.5 px-4 text-right">Thao Tác</th>
@@ -248,21 +239,8 @@ export default function AdminCategoriesPage() {
               <tbody className="divide-y divide-slate-100">
                 {paginatedCategories.map((cat) => (
                   <tr key={cat.id} className="hover:bg-slate-50/80 transition">
-                    <td className="py-3.5 px-4 font-extrabold text-slate-700">
-                      <span className="w-6 h-6 rounded-lg bg-slate-100 inline-flex items-center justify-center text-slate-600">
-                        {cat.sortOrder}
-                      </span>
-                    </td>
                     <td className="py-3.5 px-4 font-bold text-slate-900 text-sm">
-                      <div className="flex items-center gap-2">
-                        <span className="p-1.5 rounded-lg bg-orange-50 text-orange-600 text-xs">
-                          {cat.icon || "📂"}
-                        </span>
-                        <span>{cat.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 font-mono text-slate-500 text-[11px]">
-                      {cat.slug}
+                      {cat.name}
                     </td>
                     <td className="py-3.5 px-4">
                       <span className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full font-bold text-xs">
@@ -327,109 +305,88 @@ export default function AdminCategoriesPage() {
       </div>
 
       {/* Modal Create / Edit */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h2 className="text-lg font-black text-slate-900">
-                {editingCat ? "Chỉnh Sửa Danh Mục" : "Thêm Danh Mục Mới"}
-              </h2>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSave} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Tên Danh Mục *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  placeholder="VD: Ăn Vặt Nóng Hổi, Chè Ngon..."
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
+      {isModalOpen && mounted &&
+        createPortal(
+          <div
+            style={{ zIndex: 99999 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          >
+            <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h2 className="text-lg font-black text-slate-900">
+                  {editingCat ? "Chỉnh Sửa Danh Mục" : "Thêm Danh Mục Mới"}
+                </h2>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <form onSubmit={handleSave} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Icon / Emoji
+                    Tên Danh Mục *
                   </label>
                   <input
                     type="text"
-                    value={formIcon}
-                    onChange={(e) => setFormIcon(e.target.value)}
-                    placeholder="VD: Flame, IceCream, 🍲..."
+                    required
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    placeholder="VD: Ăn Vặt Nóng Hổi, Chè Ngon..."
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Thứ Tự Sắp Xếp
+
+                <div className="pt-1">
+                  <label className="flex items-center gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formIsActive}
+                      onChange={(e) => setFormIsActive(e.target.checked)}
+                      className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500"
+                    />
+                    <span className="text-xs font-bold text-slate-800">
+                      Bật hiển thị trên thực đơn khách hàng
+                    </span>
                   </label>
-                  <input
-                    type="number"
-                    value={formSortOrder}
-                    onChange={(e) => setFormSortOrder(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
                 </div>
-              </div>
 
-              <div className="pt-1">
-                <label className="flex items-center gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formIsActive}
-                    onChange={(e) => setFormIsActive(e.target.checked)}
-                    className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500"
-                  />
-                  <span className="text-xs font-bold text-slate-800">
-                    Bật hiển thị trên thực đơn khách hàng
-                  </span>
-                </label>
-              </div>
+                {errorMsg && (
+                  <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-xs font-medium">
+                    {errorMsg}
+                  </div>
+                )}
 
-              {errorMsg && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-xs font-medium">
-                  {errorMsg}
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                  >
+                    Hủy Bỏ
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-md shadow-orange-600/25 transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Đang lưu...</span>
+                      </>
+                    ) : (
+                      <span>Lưu Danh Mục</span>
+                    )}
+                  </button>
                 </div>
-              )}
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
-                >
-                  Hủy Bỏ
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-md shadow-orange-600/25 transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Đang lưu...</span>
-                    </>
-                  ) : (
-                    <span>Lưu Danh Mục</span>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
