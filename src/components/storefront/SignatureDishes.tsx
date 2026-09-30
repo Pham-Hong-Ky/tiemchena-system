@@ -95,7 +95,7 @@ const NEM_NUONG_CONFIG: SignatureDishConfig = {
 
 const CHE_XOAI_CONFIG: SignatureDishConfig = {
   badgeIcon: Heart,
-  badgeLabel: "Món chè tươi máy",
+  badgeLabel: "MÓN CHÈ TƯƠI MÁT",
   badgeColor: "bg-amber-500",
   gradientClass: "bg-gradient-to-br from-amber-50/50 to-yellow-50/30",
   borderClass: "border border-amber-200/70",
