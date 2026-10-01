@@ -6,6 +6,7 @@ import { useCart } from "@/context/CartContext";
 import { useTheme } from "@/context/ThemeContext";
 import { ButtonFestiveDecorator } from "@/components/theme/ButtonFestiveDecorator";
 import { ProductType } from "@/types";
+import { getOptimizedImageUrl } from "@/lib/imageOptimizer";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -43,11 +44,10 @@ function SignatureDishCard({ product, config, onAdd }: SignatureDishCardProps) {
         {/* Image */}
         <div className="relative rounded-2xl overflow-hidden aspect-[16/10] mb-5 shadow-sm group">
           <img
-            src={
-              product.image ||
-              "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80"
-            }
+            src={getOptimizedImageUrl(product.image, { width: 600, crop: "fill" })}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
           />
           <div

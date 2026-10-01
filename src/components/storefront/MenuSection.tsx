@@ -13,6 +13,7 @@ import {
 import { useTheme } from "@/context/ThemeContext";
 import { ButtonFestiveDecorator } from "@/components/theme/ButtonFestiveDecorator";
 import { ProductType, CategoryType } from "@/types";
+import { getOptimizedImageUrl } from "@/lib/imageOptimizer";
 
 interface MenuSectionProps {
   categories: CategoryType[];
@@ -208,12 +209,10 @@ export function MenuSection({
                   {/* Image Container */}
                   <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
                     <img
-                      src={
-                        product.image ||
-                        "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80"
-                      }
+                      src={getOptimizedImageUrl(product.image, { width: 450, crop: "fill" })}
                       alt={product.name}
                       loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                     />
 

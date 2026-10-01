@@ -165,6 +165,8 @@ export default function Home() {
         />
 
         <CartDrawer
+          products={products}
+          toppingsList={toppings}
           onEditItem={handleEditCartItem}
           onOrderSuccess={(order) => {
             setSuccessOrder(order);

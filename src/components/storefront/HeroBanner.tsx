@@ -15,6 +15,7 @@ import { FestiveSkyAnimation } from "@/components/theme/FestiveSkyAnimation";
 import { ButtonFestiveDecorator } from "@/components/theme/ButtonFestiveDecorator";
 
 import { ProductType } from "@/types";
+import { getOptimizedImageUrl } from "@/lib/imageOptimizer";
 
 interface HeroBannerProps {
   products?: ProductType[];
@@ -196,8 +197,10 @@ export function HeroBanner({ products = [], onSelectTag }: HeroBannerProps) {
                       }`}
                     >
                       <img
-                        src={slide.image}
+                        src={getOptimizedImageUrl(slide.image, { width: 800, crop: "fill" })}
                         alt={slide.title}
+                        loading={index === 0 ? "eager" : "lazy"}
+                        decoding="async"
                         onError={(e) => {
                           e.currentTarget.src =
                             "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80";

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { BookOpen, ZoomIn, X, Download } from "lucide-react";
+import { getOptimizedImageUrl } from "@/lib/imageOptimizer";
 
 interface MenuImageItem {
   id: string;
@@ -70,8 +71,10 @@ export function FullMenuGallerySection() {
               {/* Image Preview with Hover Zoom Icon */}
               <div className="relative aspect-[3/4] bg-slate-100 overflow-hidden">
                 <img
-                  src={board.imageUrl}
+                  src={getOptimizedImageUrl(board.imageUrl, { width: 600, crop: "fill" })}
                   alt={board.title}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
@@ -147,8 +150,9 @@ export function FullMenuGallerySection() {
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={activeZoomImage.imageUrl}
+              src={getOptimizedImageUrl(activeZoomImage.imageUrl, { width: 1600, crop: "limit" })}
               alt={activeZoomImage.title}
+              decoding="async"
               className="max-h-[80vh] w-auto object-contain rounded-xl shadow-2xl"
             />
           </div>

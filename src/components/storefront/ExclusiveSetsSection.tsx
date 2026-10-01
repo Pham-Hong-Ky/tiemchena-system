@@ -3,6 +3,7 @@
 import React from "react";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
+import { getOptimizedImageUrl } from "@/lib/imageOptimizer";
 
 interface ExclusiveSetsSectionProps {
   onSelectCategory: (categorySlug: string) => void;
@@ -40,8 +41,10 @@ export function ExclusiveSetsSection({ onSelectCategory }: ExclusiveSetsSectionP
           {/* Card 1: Bộ tứ ăn vặt */}
           <div className="relative rounded-3xl overflow-hidden shadow-lg border border-orange-200/60 group bg-slate-900 aspect-[16/10] sm:aspect-[16/9] flex flex-col justify-end p-5 sm:p-7 text-white">
             <img
-              src="https://res.cloudinary.com/vhguqaqt/image/upload/v1790778365/tiemchena/menu/banner-do-an.jpg"
+              src={getOptimizedImageUrl("https://res.cloudinary.com/vhguqaqt/image/upload/v1790778365/tiemchena/menu/banner-do-an.jpg", { width: 800, crop: "fill" })}
               alt="Bộ tứ ăn vặt nóng giòn Tiệm Chè Na"
+              loading="lazy"
+              decoding="async"
               className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 opacity-90"
             />
             {/* Gradient Overlay */}
@@ -73,8 +76,10 @@ export function ExclusiveSetsSection({ onSelectCategory }: ExclusiveSetsSectionP
           {/* Card 2: Bộ tứ giải nhiệt */}
           <div className="relative rounded-3xl overflow-hidden shadow-lg border border-amber-200/60 group bg-slate-900 aspect-[16/10] sm:aspect-[16/9] flex flex-col justify-end p-5 sm:p-7 text-white">
             <img
-              src="https://res.cloudinary.com/vhguqaqt/image/upload/v1790778362/tiemchena/menu/banner-che.jpg"
+              src={getOptimizedImageUrl("https://res.cloudinary.com/vhguqaqt/image/upload/v1790778362/tiemchena/menu/banner-che.jpg", { width: 800, crop: "fill" })}
               alt="Bộ tứ giải nhiệt thanh mát Tiệm Chè Na"
+              loading="lazy"
+              decoding="async"
               className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 opacity-90"
             />
             {/* Gradient Overlay */}
