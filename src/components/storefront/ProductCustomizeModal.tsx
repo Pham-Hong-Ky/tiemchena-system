@@ -7,6 +7,9 @@ import { useTheme } from "@/context/ThemeContext";
 import { ButtonFestiveDecorator } from "@/components/theme/ButtonFestiveDecorator";
 import { ProductType, ToppingType } from "@/types";
 
+import { resolveProductOptions } from "@/lib/cartHelpers";
+import { getOptimizedImageUrl } from "@/lib/imageOptimizer";
+
 interface ProductCustomizeModalProps {
   product: ProductType | null;
   editingCartItem?: CartItem | null;
@@ -42,52 +45,8 @@ export function ProductCustomizeModal({
   }, [product, editingCartItem]);
 
   const availableOptions: ToppingType[] = React.useMemo(() => {
-    if (!product) return [];
-
-    const toppingMap = new Map((toppingsList || []).map((t) => [t.id, t]));
-
-    // 1. Phân tích tùy chọn riêng đã cấu hình cho món ăn (nếu có)
-    if (product.toppingsJson) {
-      try {
-        const parsed =
-          typeof product.toppingsJson === "string"
-            ? JSON.parse(product.toppingsJson)
-            : product.toppingsJson;
-
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const resolved: ToppingType[] = [];
-          parsed.forEach((item: any, idx: number) => {
-            if (typeof item === "string") {
-              const found = toppingMap.get(item);
-              if (found) {
-                resolved.push({
-                  id: found.id,
-                  name: found.name,
-                  price: found.price,
-                  isAvailable: true,
-                });
-              }
-            } else if (item && typeof item === "object" && item.name) {
-              resolved.push({
-                id: item.id || `opt-${idx}-${String(item.name).toLowerCase().replace(/[^a-z0-9]/g, "")}`,
-                name: item.name,
-                price: Number(item.price) || 0,
-                isAvailable: true,
-              });
-            }
-          });
-
-          if (resolved.length > 0) {
-            return resolved;
-          }
-        }
-      } catch (e) {
-        console.error("Error parsing toppingsJson", e);
-      }
-    }
-
-    return [];
-  }, [product, toppingsList]);
+    return resolveProductOptions(product, toppingsList, selectedToppings);
+  }, [product, toppingsList, selectedToppings]);
 
   if (!product) return null;
 
@@ -126,11 +85,9 @@ export function ProductCustomizeModal({
         {/* Header with image */}
         <div className="relative aspect-video overflow-hidden bg-slate-100">
           <img
-            src={
-              product.image ||
-              "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80"
-            }
+            src={getOptimizedImageUrl(product.image, { width: 600, crop: "fill" })}
             alt={product.name}
+            decoding="async"
             className="w-full h-full object-cover"
           />
           <button
