@@ -112,7 +112,7 @@ export function ProductLivePreview({
             {options.length > 0 && (
               <div className="pt-2 border-t border-slate-100">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                  ✨ {options.length} Tùy chọn đi kèm:
+                  {options.length} Tùy chọn đi kèm:
                 </p>
                 <div className="flex flex-wrap gap-1">
                   {options.map((opt) => (

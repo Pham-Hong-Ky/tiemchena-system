@@ -92,7 +92,27 @@ export function ProductModal({
         try {
           const parsed = JSON.parse(editingProduct.toppingsJson);
           if (Array.isArray(parsed)) {
-            setFormOptions(parsed);
+            const toppingMap = new Map((toppings || []).map((t) => [t.id, t]));
+            const normalized = parsed
+              .map((item: any, idx: number) => {
+                if (typeof item === "string") {
+                  const found = toppingMap.get(item);
+                  if (found) {
+                    return { id: found.id, name: found.name, price: found.price };
+                  }
+                  return null;
+                }
+                if (item && typeof item === "object" && item.name) {
+                  return {
+                    id: item.id || `opt-${idx}-${String(item.name).toLowerCase().replace(/[^a-z0-9]/g, "")}`,
+                    name: String(item.name),
+                    price: Number(item.price) || 0,
+                  };
+                }
+                return null;
+              })
+              .filter(Boolean) as ProductOptionType[];
+            setFormOptions(normalized);
           } else {
             setFormOptions([]);
           }
@@ -116,7 +136,7 @@ export function ProductModal({
       setFormIsAvailable(true);
       setFormOptions([]);
     }
-  }, [isOpen, editingProduct, categories]);
+  }, [isOpen, editingProduct, categories, toppings]);
 
   const handleCropComplete = (url: string) => {
     setCropperOpen(false);

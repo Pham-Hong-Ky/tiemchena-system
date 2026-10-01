@@ -49,18 +49,6 @@ export function resolveProductOptions(
     }
   }
 
-  // Nếu món không có cấu hình toppingsJson riêng, dùng toppingsList chung
-  if (result.length === 0 && toppingsList.length > 0) {
-    toppingsList.forEach((t) => {
-      result.push({
-        id: t.id,
-        name: t.name,
-        price: t.price,
-        isAvailable: true,
-      });
-    });
-  }
-
   // Đảm bảo các topping đã chọn trên món này luôn có mặt để khách có thể tích hoặc bỏ chọn
   currentSelected.forEach((st) => {
     if (!result.some((opt) => opt.id === st.id)) {
