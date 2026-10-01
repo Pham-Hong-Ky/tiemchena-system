@@ -195,7 +195,7 @@ export default function AdminUsersPage() {
                 <tr>
                   <th className="py-3.5 px-4">Khách Hàng</th>
                   <th className="py-3.5 px-4">Số Điện Thoại</th>
-                  <th className="py-3.5 px-4">Địa Chỉ Giao Hàng</th>
+                  <th className="py-3.5 px-4">Địa Chỉ Đơn Gần Nhất</th>
                   <th className="py-3.5 px-4">Số Đơn Hàng</th>
                   <th className="py-3.5 px-4">Tổng Chi Tiêu</th>
                   <th className="py-3.5 px-4">Đơn Gần Nhất</th>
@@ -329,7 +329,7 @@ export default function AdminUsersPage() {
             {/* Address */}
             <div className="space-y-1">
               <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Địa Chỉ Giao Hàng
+                Địa Chỉ Đơn Gần Nhất (Thay đổi theo từng đơn)
               </p>
               <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
                 {selectedCustomer.address || "Chưa có thông tin địa chỉ"}

@@ -1,0 +1,16 @@
+{
+  "app": {
+    "title": "Tiệm Chè Na",
+    "headerTitle": "Tiệm Chè Na",
+    "headerColor": "#EA580C",
+    "textColor": "white",
+    "statusBar": "transparent",
+    "leftButton": "back"
+  },
+  "pages": [
+    "pages/index/index"
+  ],
+  "template": {
+    "name": "tiemchena-storefront"
+  }
+}

@@ -1,0 +1,124 @@
+import { prisma } from "@/lib/prisma";
+import { orderEvents } from "@/lib/orderEvents";
+
+export interface SepayWebhookPayload {
+  id?: number;
+  gateway?: string;
+  transactionDate?: string;
+  accountNumber?: string;
+  code?: string | null;
+  content?: string;
+  transferType?: string;
+  transferAmount?: number;
+  accumulated?: number;
+  referenceCode?: string;
+  description?: string;
+}
+
+export const sepayService = {
+  async processWebhook(payload: SepayWebhookPayload, authHeader: string) {
+    // 1. Verify SePay API Key (if configured)
+    const configuredKey = process.env.SEPAY_WEBHOOK_KEY;
+    if (configuredKey && authHeader !== `Apikey ${configuredKey}`) {
+      throw new Error("UNAUTHORIZED_SEPAY");
+    }
+
+    const {
+      gateway,
+      content = "",
+      transferType,
+      transferAmount = 0,
+      referenceCode,
+    } = payload;
+
+    // Only process incoming transfers
+    if (transferType !== "in" && transferType !== undefined) {
+      return { success: true, message: "Ignored outgoing transfer" };
+    }
+
+    const cleanContent = String(content).toUpperCase();
+
+    // 2. Extract potential Order Code (e.g. TCN-123456, TCN 123456, TCN123456)
+    let matchedOrderCode: string | null = null;
+    const matchTCN = cleanContent.match(/TCN[\s-_]?(\d{6})/i);
+    if (matchTCN) {
+      matchedOrderCode = `TCN-${matchTCN[1]}`;
+    }
+
+    // 3. Find order in DB
+    let order = null;
+    if (matchedOrderCode) {
+      order = await prisma.order.findUnique({
+        where: { orderCode: matchedOrderCode },
+        include: { items: true },
+      });
+    }
+
+    // Fallback: search recent unpaid orders within 24h
+    if (!order) {
+      const recentOrders = await prisma.order.findMany({
+        where: {
+          paymentStatus: "UNPAID",
+          createdAt: {
+            gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+          },
+        },
+        include: { items: true },
+        orderBy: { createdAt: "desc" },
+        take: 30,
+      });
+
+      for (const candidate of recentOrders) {
+        const rawCode = candidate.orderCode.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+        const phoneLast4 = candidate.customerPhone.slice(-4);
+        if (
+          cleanContent.includes(rawCode) ||
+          cleanContent.includes(candidate.orderCode.toUpperCase()) ||
+          (phoneLast4 && cleanContent.includes(phoneLast4) && Math.abs(candidate.finalAmount - transferAmount) <= 1000)
+        ) {
+          order = candidate;
+          break;
+        }
+      }
+    }
+
+    if (!order) {
+      return {
+        success: true,
+        message: "No matching order found, logged for review",
+      };
+    }
+
+    if (order.paymentStatus === "PAID") {
+      return {
+        success: true,
+        message: "Order was already marked as PAID",
+        orderCode: order.orderCode,
+      };
+    }
+
+    // 4. Update order to PAID and auto-CONFIRM
+    const updatedOrder = await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        paymentStatus: "PAID",
+        paymentMethod: "VIETQR_SEPAY",
+        orderStatus: order.orderStatus === "PENDING" ? "CONFIRMED" : order.orderStatus,
+        note: order.note
+          ? `${order.note} | [SePay: Đã nhận ${transferAmount.toLocaleString("vi-VN")}đ qua ${gateway || "Bank"} mã GD: ${referenceCode || ""}]`
+          : `[SePay: Đã nhận ${transferAmount.toLocaleString("vi-VN")}đ qua ${gateway || "Bank"} mã GD: ${referenceCode || ""}]`,
+      },
+      include: { items: true },
+    });
+
+    // 5. Emit real-time SSE notification
+    orderEvents.emit("order_updated", updatedOrder);
+
+    return {
+      success: true,
+      message: "Order payment verified successfully via SePay",
+      orderCode: updatedOrder.orderCode,
+      amount: transferAmount,
+    };
+  },
+};

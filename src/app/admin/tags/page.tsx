@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { createPortal } from "react-dom";
 import {
   Tag,
   Plus,
@@ -10,58 +9,17 @@ import {
   Trash2,
   CheckCircle2,
   XCircle,
-  Loader2,
-  X,
-  Flame,
-  Star,
-  Award,
-  Heart,
-  AlertCircle,
-  Zap,
-  Check,
-  Utensils
+  Flame
 } from "lucide-react";
 import { TagType } from "@/types";
-import { getTags, createTag, updateTag, deleteTag } from "@/lib/api";
+import { getTags, updateTag, deleteTag } from "@/lib/api";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Pagination } from "@/components/ui/Pagination";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { toast } from "@/context/ToastContext";
-
-const COLOR_PRESETS = [
-  { label: "Đỏ Rực (Hot)", badgeColor: "bg-red-500 text-white", textColor: "text-red-600" },
-  { label: "Vàng Kim (Best Seller)", badgeColor: "bg-amber-500 text-white", textColor: "text-amber-600" },
-  { label: "Xanh Lá (Đang Bán)", badgeColor: "bg-emerald-500 text-white", textColor: "text-emerald-600" },
-  { label: "Tím Mộng Mơ (Mới)", badgeColor: "bg-purple-600 text-white", textColor: "text-purple-600" },
-  { label: "Cam Đậm (Đặc Sản)", badgeColor: "bg-orange-600 text-white", textColor: "text-orange-600" },
-  { label: "Xanh Dương (Combo)", badgeColor: "bg-blue-600 text-white", textColor: "text-blue-600" },
-  { label: "Xám Đen (Tạm Hết)", badgeColor: "bg-slate-600 text-white", textColor: "text-slate-600" },
-];
-
-const ICON_OPTIONS = ["Flame", "Star", "CheckCircle2", "Award", "Heart", "AlertCircle", "Zap", "Utensils"];
-
-function renderBadgeIcon(iconName: string) {
-  switch (iconName) {
-    case "Flame":
-      return <Flame className="w-3.5 h-3.5 fill-current" />;
-    case "Star":
-      return <Star className="w-3.5 h-3.5 fill-current" />;
-    case "CheckCircle2":
-      return <CheckCircle2 className="w-3.5 h-3.5" />;
-    case "Award":
-      return <Award className="w-3.5 h-3.5" />;
-    case "Heart":
-      return <Heart className="w-3.5 h-3.5 fill-current" />;
-    case "AlertCircle":
-      return <AlertCircle className="w-3.5 h-3.5" />;
-    case "Zap":
-      return <Zap className="w-3.5 h-3.5 fill-current" />;
-    default:
-      return <Tag className="w-3.5 h-3.5" />;
-  }
-}
+import { TagModal, renderBadgeIcon } from "@/components/admin/tags/TagModal";
 
 export default function AdminTagsPage() {
-  const [mounted, setMounted] = useState(false);
   const [tags, setTags] = useState<TagType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -72,17 +30,9 @@ export default function AdminTagsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 6;
 
-  // Form state
-  const [formName, setFormName] = useState("");
-  const [formCode, setFormCode] = useState("");
-  const [formIcon, setFormIcon] = useState("Flame");
-  const [formBadgeColor, setFormBadgeColor] = useState("bg-red-500 text-white");
-  const [formTextColor, setFormTextColor] = useState("text-red-600");
-  const [formDescription, setFormDescription] = useState("");
-  const [formSortOrder, setFormSortOrder] = useState("1");
-  const [formIsActive, setFormIsActive] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  // Deletion state
+  const [deletingTag, setDeletingTag] = useState<TagType | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadData = async () => {
     try {
@@ -97,79 +47,17 @@ export default function AdminTagsPage() {
   };
 
   useEffect(() => {
-    setMounted(true);
     loadData();
   }, []);
 
   const openCreateModal = () => {
     setEditingTag(null);
-    setFormName("");
-    setFormCode("");
-    setFormIcon("Flame");
-    setFormBadgeColor("bg-red-500 text-white");
-    setFormTextColor("text-red-600");
-    setFormDescription("");
-    setFormSortOrder(String(tags.length + 1));
-    setFormIsActive(true);
-    setErrorMsg("");
     setIsModalOpen(true);
   };
 
   const openEditModal = (tag: TagType) => {
     setEditingTag(tag);
-    setFormName(tag.name);
-    setFormCode(tag.code);
-    setFormIcon(tag.icon || "Flame");
-    setFormBadgeColor(tag.badgeColor || "bg-red-500 text-white");
-    setFormTextColor(tag.textColor || "text-red-600");
-    setFormDescription(tag.description || "");
-    setFormSortOrder(String(tag.sortOrder));
-    setFormIsActive(tag.isActive);
-    setErrorMsg("");
     setIsModalOpen(true);
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formName.trim() || !formCode.trim()) {
-      setErrorMsg("Vui lòng nhập đầy đủ tên thẻ và mã thẻ");
-      return;
-    }
-
-    setIsSaving(true);
-    setErrorMsg("");
-    try {
-      if (editingTag) {
-        await updateTag({
-          id: editingTag.id,
-          code: formCode.trim().toUpperCase(),
-          name: formName.trim(),
-          icon: formIcon,
-          badgeColor: formBadgeColor,
-          textColor: formTextColor,
-          description: formDescription.trim(),
-          sortOrder: parseInt(formSortOrder) || 0,
-          isActive: formIsActive,
-        });
-      } else {
-        await createTag({
-          code: formCode.trim().toUpperCase(),
-          name: formName.trim(),
-          icon: formIcon,
-          badgeColor: formBadgeColor,
-          textColor: formTextColor,
-          description: formDescription.trim(),
-          sortOrder: parseInt(formSortOrder) || 0,
-          isActive: formIsActive,
-        });
-      }
-      setIsModalOpen(false);
-      loadData();
-    } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : "Lỗi lưu thẻ");
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   const handleToggleActive = async (tag: TagType) => {
@@ -184,13 +72,18 @@ export default function AdminTagsPage() {
     }
   };
 
-  const handleDelete = async (tag: TagType) => {
+  const confirmDeleteTag = async () => {
+    if (!deletingTag) return;
+    setIsDeleting(true);
     try {
-      await deleteTag(tag.id);
-      toast.success(`Đã xóa nhãn "${tag.name}" thành công`);
+      await deleteTag(deletingTag.id);
+      toast.success(`Đã xóa nhãn "${deletingTag.name}" thành công`);
       loadData();
-    } catch (err) {
+    } catch {
       toast.error("Không thể xóa thẻ");
+    } finally {
+      setIsDeleting(false);
+      setDeletingTag(null);
     }
   };
 
@@ -372,7 +265,7 @@ export default function AdminTagsPage() {
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(tag)}
+                          onClick={() => setDeletingTag(tag)}
                           className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
                           title="Xóa nhãn"
                         >
@@ -397,188 +290,25 @@ export default function AdminTagsPage() {
         />
       </div>
 
-      {/* Modal Create / Edit Tag */}
-      {isModalOpen && mounted &&
-        createPortal(
-          <div
-            style={{ zIndex: 99999 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
-          >
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h2 className="text-lg font-black text-slate-900">
-                {editingTag ? "Chỉnh Sửa Nhãn Trạng Thái" : "Thêm Nhãn Mới"}
-              </h2>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      {/* Modal Create / Edit Tag Component */}
+      <TagModal
+        isOpen={isModalOpen}
+        editingTag={editingTag}
+        totalTags={tags.length}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={loadData}
+      />
 
-            <form onSubmit={handleSave} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Tên Nhãn Hiển Thị *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  placeholder="VD: Món Hot Đang Sốt, Bán Chạy Nhất, Đang Mở Bán..."
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Mã Code *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formCode}
-                    onChange={(e) => setFormCode(e.target.value.toUpperCase())}
-                    placeholder="VD: HOT, BESTSELLER, NEW..."
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-orange-500 uppercase"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Thứ Tự Ưu Tiên
-                  </label>
-                  <input
-                    type="number"
-                    value={formSortOrder}
-                    onChange={(e) => setFormSortOrder(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                </div>
-              </div>
-
-              {/* Color Presets */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Màu Sắc Nhãn
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {COLOR_PRESETS.map((c) => {
-                    const isSelected = formBadgeColor === c.badgeColor;
-                    return (
-                      <button
-                        key={c.label}
-                        type="button"
-                        onClick={() => {
-                          setFormBadgeColor(c.badgeColor);
-                          setFormTextColor(c.textColor);
-                        }}
-                        className={`p-2 rounded-xl border text-left text-xs font-bold flex items-center justify-between transition cursor-pointer ${
-                          isSelected
-                            ? "border-orange-500 ring-2 ring-orange-500/20 bg-orange-50/50"
-                            : "border-slate-200 hover:bg-slate-50"
-                        }`}
-                      >
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] ${c.badgeColor}`}>
-                          {c.label.split(" ")[0]}
-                        </span>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-orange-600" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Icon select */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Biểu Tượng (Icon)
-                </label>
-                <div className="flex items-center gap-2 overflow-x-auto py-1">
-                  {ICON_OPTIONS.map((ico) => {
-                    const isSelected = formIcon === ico;
-                    return (
-                      <button
-                        key={ico}
-                        type="button"
-                        onClick={() => setFormIcon(ico)}
-                        className={`p-2.5 rounded-xl border flex items-center justify-center transition cursor-pointer ${
-                          isSelected
-                            ? "border-orange-500 bg-orange-50 text-orange-600 ring-2 ring-orange-500/20"
-                            : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                        }`}
-                        title={ico}
-                      >
-                        {renderBadgeIcon(ico)}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Mô Tả Nhãn
-                </label>
-                <textarea
-                  rows={2}
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  placeholder="Mô tả công dụng và ý nghĩa của nhãn..."
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-orange-500 leading-relaxed"
-                />
-              </div>
-
-              <div className="pt-1">
-                <label className="flex items-center gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formIsActive}
-                    onChange={(e) => setFormIsActive(e.target.checked)}
-                    className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500"
-                  />
-                  <span className="text-xs font-bold text-slate-800">
-                    Kích hoạt áp dụng nhãn này trong hệ thống
-                  </span>
-                </label>
-              </div>
-
-              {errorMsg && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-xs font-medium">
-                  {errorMsg}
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
-                >
-                  Hủy Bỏ
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-md shadow-orange-600/25 transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Đang lưu...</span>
-                    </>
-                  ) : (
-                    <span>Lưu Nhãn Trạng Thái</span>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
+      {/* Confirm Delete Tag Modal */}
+      <ConfirmModal
+        isOpen={!!deletingTag}
+        title="Xác nhận xóa nhãn (tag)"
+        message={`Bạn có chắc chắn muốn xóa nhãn "${deletingTag?.name || ""}"? Nhãn này sẽ bị gỡ khỏi tất cả món ăn đang được gắn.`}
+        confirmText="Xóa nhãn"
+        isLoading={isDeleting}
+        onConfirm={confirmDeleteTag}
+        onClose={() => setDeletingTag(null)}
+      />
     </div>
   );
 }

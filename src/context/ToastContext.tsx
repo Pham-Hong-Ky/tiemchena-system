@@ -94,10 +94,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast, toast: toastMethods }}>
       {children}
-      {/* Toast Overlay Container */}
+      {/* Toast Overlay Container - Bottom Right to avoid overlapping header & drawers */}
       <aside
         aria-label="Thông báo hệ thống"
-        className="fixed top-4 right-4 z-[99999] flex flex-col gap-2.5 max-w-sm sm:max-w-md w-full px-4 sm:px-0 pointer-events-none select-none"
+        className="fixed bottom-5 right-5 z-[99999] flex flex-col-reverse gap-2.5 max-w-sm sm:max-w-md w-full px-4 sm:px-0 pointer-events-none select-none"
       >
         {toasts.map((item) => (
           <ToastCard key={item.id} item={item} onDismiss={() => removeToast(item.id)} />

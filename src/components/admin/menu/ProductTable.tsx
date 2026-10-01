@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { ProductType, CategoryType } from "@/types";
 import { Pagination } from "@/components/ui/Pagination";
+import { getOptimizedImageUrl } from "@/lib/imageOptimizer";
 
 interface ProductTableProps {
   products: ProductType[];
@@ -177,8 +178,10 @@ export function ProductTable({
                       <td className="p-3.5">
                         <div className="flex items-center gap-3">
                           <img
-                            src={p.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=100&q=80"}
+                            src={getOptimizedImageUrl(p.image, { width: 120, crop: "fill" })}
                             alt={p.name}
+                            loading="lazy"
+                            decoding="async"
                             className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0 shadow-xs"
                           />
                           <div>

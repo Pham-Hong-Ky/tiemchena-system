@@ -39,6 +39,7 @@ interface CartContextType {
   ) => void;
   removeFromCart: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
+  updateItemNote: (cartItemId: string, note: string) => void;
   clearCart: () => void;
   appliedVoucher: VoucherApplied | null;
   applyVoucher: (code: string) => Promise<{ success: boolean; message?: string }>;
@@ -175,6 +176,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  const updateItemNote = (cartItemId: string, note: string) => {
+    setCart((prev) =>
+      prev.map((item) => (item.cartItemId === cartItemId ? { ...item, note } : item))
+    );
+  };
+
   const clearCart = () => {
     setCart([]);
     setAppliedVoucher(null);
@@ -234,6 +241,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         updateCartItem,
         removeFromCart,
         updateQuantity,
+        updateItemNote,
         clearCart,
         appliedVoucher,
         applyVoucher,

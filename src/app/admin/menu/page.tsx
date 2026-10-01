@@ -5,6 +5,7 @@ import { Plus, UtensilsCrossed } from "lucide-react";
 import { ProductType, CategoryType, ToppingType } from "@/types";
 import { ProductTable } from "@/components/admin/menu/ProductTable";
 import { ProductModal } from "@/components/admin/menu/ProductModal";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { toast } from "@/context/ToastContext";
 
 export default function AdminMenuPage() {
@@ -146,12 +147,17 @@ export default function AdminMenuPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const confirmDelete = async () => {
+    if (!deletingProductId) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/products/${deletingProductId}`, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
-        setProducts((prev) => prev.filter((p) => p.id !== id));
+        setProducts((prev) => prev.filter((p) => p.id !== deletingProductId));
         toast.success("Đã xóa món ăn khỏi thực đơn thành công");
       } else {
         toast.error(data.error || "Không thể xóa món ăn");
@@ -159,7 +165,14 @@ export default function AdminMenuPage() {
     } catch (e) {
       console.error(e);
       toast.error("Không thể xóa món ăn");
+    } finally {
+      setIsDeleting(false);
+      setDeletingProductId(null);
     }
+  };
+
+  const handleDelete = (id: string) => {
+    setDeletingProductId(id);
   };
 
   return (
@@ -216,6 +229,16 @@ export default function AdminMenuPage() {
         allProducts={products}
         onClose={() => setIsModalOpen(false)}
         onSaved={fetchData}
+      />
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={!!deletingProductId}
+        title="Xác nhận xóa món ăn"
+        message="Bạn có chắc chắn muốn xóa món này khỏi thực đơn không? Thao tác này không thể hoàn tác."
+        confirmText="Xóa món ăn"
+        isLoading={isDeleting}
+        onConfirm={confirmDelete}
+        onClose={() => setDeletingProductId(null)}
       />
     </div>
   );

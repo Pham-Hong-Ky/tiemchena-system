@@ -19,6 +19,7 @@ import { CategoryType } from "@/types";
 import { getCategories, createCategory, updateCategory, deleteCategory } from "@/lib/api";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Pagination } from "@/components/ui/Pagination";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { toast } from "@/context/ToastContext";
 
 export default function AdminCategoriesPage() {
@@ -117,14 +118,26 @@ export default function AdminCategoriesPage() {
     }
   };
 
-  const handleDelete = async (cat: CategoryType) => {
+  const [deletingCat, setDeletingCat] = useState<CategoryType | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const confirmDeleteCategory = async () => {
+    if (!deletingCat) return;
+    setIsDeleting(true);
     try {
-      await deleteCategory(cat.id);
-      toast.success(`Đã xóa danh mục "${cat.name}" thành công`);
+      await deleteCategory(deletingCat.id);
+      toast.success(`Đã xóa danh mục "${deletingCat.name}" thành công`);
       loadData();
-    } catch (err) {
+    } catch {
       toast.error("Không thể xóa danh mục");
+    } finally {
+      setIsDeleting(false);
+      setDeletingCat(null);
     }
+  };
+
+  const handleDelete = (cat: CategoryType) => {
+    setDeletingCat(cat);
   };
 
   const filteredCategories = categories.filter((c) =>
@@ -387,6 +400,17 @@ export default function AdminCategoriesPage() {
           </div>,
           document.body
         )}
+
+      {/* Confirm Delete Category Modal */}
+      <ConfirmModal
+        isOpen={!!deletingCat}
+        title="Xác nhận xóa danh mục"
+        message={`Bạn có chắc chắn muốn xóa danh mục "${deletingCat?.name || ""}"? Tất cả món ăn thuộc danh mục này có thể bị ảnh hưởng.`}
+        confirmText="Xóa danh mục"
+        isLoading={isDeleting}
+        onConfirm={confirmDeleteCategory}
+        onClose={() => setDeletingCat(null)}
+      />
     </div>
   );
 }

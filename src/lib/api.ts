@@ -45,6 +45,18 @@ export async function patchOrder(
   });
 }
 
+export async function deleteOrder(orderId: string): Promise<{ success: boolean; message?: string }> {
+  return apiFetch<{ success: boolean; message?: string }>(`/api/orders/${orderId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function cleanCancelledOrders(): Promise<{ success: boolean; count: number; message?: string }> {
+  return apiFetch<{ success: boolean; count: number; message?: string }>("/api/orders/cleanup", {
+    method: "DELETE",
+  });
+}
+
 export type CreateOrderPayload = {
   customerName: string;
   customerPhone: string;
@@ -54,6 +66,8 @@ export type CreateOrderPayload = {
   items: unknown[];
   voucherCode?: string;
   website_hp?: string;
+  shippingFee?: number;
+  distanceKm?: number | null;
 };
 
 export async function createOrder(payload: CreateOrderPayload): Promise<OrderType> {
@@ -183,29 +197,6 @@ export async function updateTag(payload: {
 
 export async function deleteTag(id: string): Promise<{ success: boolean; message?: string }> {
   return apiFetch<{ success: boolean; message?: string }>(`/api/tags?id=${id}`, {
-    method: "DELETE",
-  });
-}
-
-// ─── Feedback API ─────────────────────────────────────────────────────────────
-
-export async function getFeedbacks(): Promise<FeedbackType[]> {
-  return apiFetch<FeedbackType[]>("/api/feedback");
-}
-
-export async function updateFeedback(payload: {
-  id: string;
-  reply?: string;
-  status?: "APPROVED" | "PENDING";
-}): Promise<FeedbackType> {
-  return apiFetch<FeedbackType>("/api/feedback", {
-    method: "PUT",
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function deleteFeedback(id: string): Promise<{ success: boolean; message?: string }> {
-  return apiFetch<{ success: boolean; message?: string }>(`/api/feedback?id=${id}`, {
     method: "DELETE",
   });
 }
