@@ -1,8 +1,15 @@
 import { prisma } from "@/lib/prisma";
+import { memoryCache } from "@/lib/memoryCache";
 
 export const categoryService = {
   async getCategories(includeInactive: boolean = false) {
-    return prisma.category.findMany({
+    const cacheKey = `categories:${includeInactive}`;
+    const cached = memoryCache.get<any[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const categories = await prisma.category.findMany({
       where: includeInactive ? {} : { isActive: true },
       orderBy: { sortOrder: "asc" },
       include: {
@@ -11,6 +18,9 @@ export const categoryService = {
         },
       },
     });
+
+    memoryCache.set(cacheKey, categories, 60_000);
+    return categories;
   },
 
   async createCategory(data: { name: string; icon?: string; sortOrder?: number; isActive?: boolean }) {
@@ -25,7 +35,7 @@ export const categoryService = {
       "-" +
       Date.now();
 
-    return prisma.category.create({
+    const created = await prisma.category.create({
       data: {
         name: data.name,
         slug,
@@ -39,6 +49,10 @@ export const categoryService = {
         },
       },
     });
+
+    memoryCache.invalidatePrefix("categories:");
+    memoryCache.invalidatePrefix("products:");
+    return created;
   },
 
   async updateCategory(id: string, data: { name?: string; icon?: string; sortOrder?: number; isActive?: boolean }) {
@@ -50,7 +64,7 @@ export const categoryService = {
     if (data.sortOrder !== undefined) updateData.sortOrder = parseInt(String(data.sortOrder));
     if (data.isActive !== undefined) updateData.isActive = Boolean(data.isActive);
 
-    return prisma.category.update({
+    const updated = await prisma.category.update({
       where: { id },
       data: updateData,
       include: {
@@ -59,10 +73,17 @@ export const categoryService = {
         },
       },
     });
+
+    memoryCache.invalidatePrefix("categories:");
+    memoryCache.invalidatePrefix("products:");
+    return updated;
   },
 
   async deleteCategory(id: string) {
     if (!id) throw new Error("Thiếu ID danh mục");
-    return prisma.category.delete({ where: { id } });
+    const deleted = await prisma.category.delete({ where: { id } });
+    memoryCache.invalidatePrefix("categories:");
+    memoryCache.invalidatePrefix("products:");
+    return deleted;
   },
 };
