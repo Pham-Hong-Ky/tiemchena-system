@@ -1,9 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { validatePrice, validateToppingsJson } from "@/lib/productValidation";
+import { memoryCache } from "@/lib/memoryCache";
 
 export const productService = {
   // Lấy danh sách sản phẩm & topping
   async getProducts(filters?: { categoryId?: string | null; search?: string | null }) {
+    const cacheKey = `products:${filters?.categoryId || "all"}:${filters?.search || ""}`;
+    const cached = memoryCache.get<{ products: any[]; toppings: any[] }>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const where: Record<string, any> = {};
     if (filters?.categoryId && filters.categoryId !== "all") {
       where.categoryId = filters.categoryId;
@@ -30,7 +37,9 @@ export const productService = {
       }),
     ]);
 
-    return { products, toppings };
+    const result = { products, toppings };
+    memoryCache.set(cacheKey, result, 60_000); // 60s in-memory cache
+    return result;
   },
 
   // Lấy chi tiết 1 sản phẩm
@@ -75,7 +84,7 @@ export const productService = {
 
     const productSlug = slug || name.toLowerCase().replace(/[^a-z0-9]/g, "-") + "-" + Date.now();
 
-    return prisma.product.create({
+    const created = await prisma.product.create({
       data: {
         name,
         slug: productSlug,
@@ -91,6 +100,10 @@ export const productService = {
         toppingsJson: toppingsCheck.jsonString,
       },
     });
+
+    memoryCache.invalidatePrefix("products:");
+    memoryCache.invalidatePrefix("categories:");
+    return created;
   },
 
   // Cập nhật sản phẩm
@@ -134,7 +147,7 @@ export const productService = {
       if (cat) validCategoryId = cat.id;
     }
 
-    return prisma.product.update({
+    const updated = await prisma.product.update({
       where: { id },
       data: {
         ...(name && { name }),
@@ -150,10 +163,17 @@ export const productService = {
         ...(validatedToppingsJsonStr !== undefined && { toppingsJson: validatedToppingsJsonStr }),
       },
     });
+
+    memoryCache.invalidatePrefix("products:");
+    memoryCache.invalidatePrefix("categories:");
+    return updated;
   },
 
   // Xóa sản phẩm
   async deleteProduct(id: string) {
-    return prisma.product.delete({ where: { id } });
+    const deleted = await prisma.product.delete({ where: { id } });
+    memoryCache.invalidatePrefix("products:");
+    memoryCache.invalidatePrefix("categories:");
+    return deleted;
   },
 };

@@ -37,11 +37,28 @@ export default function Home() {
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
 
   useEffect(() => {
+    // 1. Instant paint from local cache (0ms perceived load time)
+    try {
+      const cached = localStorage.getItem("tiemchena_catalog_cache");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.products?.length && parsed?.categories?.length) {
+          setProducts(parsed.products);
+          setToppings(parsed.toppings || []);
+          setCategories(parsed.categories);
+          setIsLoading(false);
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    // 2. Background revalidation to keep data up-to-date
     async function fetchData() {
       try {
         const [prodRes, catRes] = await Promise.all([
-          fetch("/api/products", { cache: "no-store" }),
-          fetch("/api/categories", { cache: "no-store" }),
+          fetch("/api/products"),
+          fetch("/api/categories"),
         ]);
         const prodData = await prodRes.json();
         const catData = await catRes.json();
@@ -52,6 +69,22 @@ export default function Home() {
         }
         if (catData.success) {
           setCategories(catData.data);
+        }
+
+        if (prodData.success && catData.success) {
+          try {
+            localStorage.setItem(
+              "tiemchena_catalog_cache",
+              JSON.stringify({
+                products: prodData.data.products,
+                toppings: prodData.data.toppings,
+                categories: catData.data,
+                updatedAt: Date.now(),
+              })
+            );
+          } catch {
+            // ignore storage quota errors
+          }
         }
       } catch (e) {
         console.error("Failed to load initial data", e);
