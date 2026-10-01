@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Plus, Minus, Trash2, SlidersHorizontal, Sparkles, Check } from "lucide-react";
+import { Plus, Minus, Trash2, SlidersHorizontal, Check } from "lucide-react";
 import { CartItem, CartTopping } from "@/context/CartContext";
 import { ToppingType } from "@/types";
 import { getOptimizedImageUrl } from "@/lib/imageOptimizer";
@@ -91,7 +91,7 @@ export function CartDrawerItem({
                   {isExpanded
                     ? "Đóng tùy chọn"
                     : item.selectedToppings.length > 0
-                    ? "Đổi option / topping"
+                    ? "Đổi topping"
                     : "+ Thêm option / topping"}
                 </span>
               </button>
@@ -127,7 +127,7 @@ export function CartDrawerItem({
         <div className="mt-1 p-3 bg-white rounded-xl border border-orange-200 shadow-sm space-y-2 animate-in fade-in duration-200">
           <div className="flex items-center justify-between text-xs font-bold text-slate-800 border-b border-slate-100 pb-1.5">
             <span className="flex items-center gap-1.5 text-orange-600">
-              <Sparkles className="w-3.5 h-3.5" /> Tùy chọn & Topping cho món này:
+              Tùy chọn & Topping cho món này:
             </span>
             <button
               type="button"

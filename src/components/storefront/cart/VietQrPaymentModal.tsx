@@ -8,13 +8,11 @@ import {
   Check,
   CheckCircle2,
   Loader2,
-  MessageCircle,
   Sparkles,
   ArrowRight,
 } from "lucide-react";
 import { OrderType } from "@/types";
 import { playOrderNotificationSound } from "@/lib/notificationSound";
-import { openZaloShopChat } from "@/lib/zaloMiniApp";
 import { toast } from "@/context/ToastContext";
 
 interface VietQrPaymentModalProps {
@@ -240,35 +238,6 @@ export function VietQrPaymentModal({
                 <Loader2 className="w-4 h-4 animate-spin text-orange-600" />
                 <span className="font-semibold">Hệ thống đang tự động lắng nghe SePay...</span>
               </div>
-
-              <button
-                type="button"
-                onClick={() => onPaymentSuccess(order)}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
-              >
-                <span>Đã chuyển tiền, đi tới trang theo dõi đơn</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  const message =
-                    `🍧 [ĐƠN HÀNG TIỆM CHÈ NA - SEPAY]\n` +
-                    `Mã đơn: #${order.orderCode}\n` +
-                    `Khách hàng: ${order.customerName}\n` +
-                    `SĐT: ${order.customerPhone}\n` +
-                    `Địa chỉ: ${order.customerAddress}\n` +
-                    `Tổng tiền: ${order.finalAmount.toLocaleString("vi-VN")}đ\n` +
-                    `Nội dung CK: ${transferMemo}\n` +
-                    `Mình vừa chuyển khoản đơn này, quán kiểm tra giúp mình nhé!`;
-                  openZaloShopChat("0986479285", message);
-                }}
-                className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-4 rounded-xl border border-blue-200/80 flex items-center justify-center gap-1.5 text-[11px] transition cursor-pointer"
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-                <span>Gửi ảnh bill qua Zalo nếu cần hỗ trợ</span>
-              </button>
             </div>
           </>
         )}

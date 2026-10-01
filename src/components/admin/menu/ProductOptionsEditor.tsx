@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { SlidersHorizontal, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { ProductOptionType } from "@/types";
 import { toast } from "@/context/ToastContext";
 
@@ -48,7 +48,6 @@ export function ProductOptionsEditor({
     <div className="space-y-3 pt-2 border-t border-slate-100">
       <div className="flex items-center justify-between">
         <h4 className="font-extrabold uppercase tracking-wider text-[11px] flex items-center gap-1.5 text-orange-600">
-          <SlidersHorizontal className="w-3.5 h-3.5" />
           <span>3. Tùy Chọn & Topping Cho Món ({options.length})</span>
         </h4>
       </div>
