@@ -12,7 +12,8 @@ import {
   Flame,
   UtensilsCrossed,
   ShieldCheck,
-  SearchCode
+  SearchCode,
+  ClipboardList
 } from "lucide-react";
 
 interface HeaderProps {
