@@ -218,6 +218,11 @@ export function MenuSection({
 
                     {/* Badges */}
                     <div className="absolute top-2 left-2 flex flex-col gap-1">
+                      {!product.isAvailable && (
+                        <span className="bg-red-600 text-white text-[9px] sm:text-[10px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full shadow-sm flex items-center gap-0.5">
+                          Hết Hàng
+                        </span>
+                      )}
                       {product.isHot && (
                         <span className="bg-red-500 text-white text-[9px] sm:text-[10px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full shadow-sm flex items-center gap-0.5">
                           <Flame className="w-3 h-3" /> HOT
@@ -231,9 +236,9 @@ export function MenuSection({
                     </div>
 
                     {!product.isAvailable && (
-                      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-                        <span className="bg-red-600 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                          Tạm hết
+                      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center">
+                        <span className="bg-red-600 text-white text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-md">
+                          Hết Hàng
                         </span>
                       </div>
                     )}
@@ -271,7 +276,7 @@ export function MenuSection({
                     onClick={() => onOpenCustomize(product)}
                     className="inline-flex items-center justify-center gap-1 bg-[#15803d] hover:bg-[#166534] text-white font-extrabold py-1.5 sm:py-2 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm shadow-xs transition active:scale-95 cursor-pointer whitespace-nowrap shrink-0 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed"
                   >
-                    <span>+ Chọn Món</span>
+                    <span>{product.isAvailable ? "+ Chọn Món" : "Hết hàng"}</span>
                   </button>
                 </div>
               </div>

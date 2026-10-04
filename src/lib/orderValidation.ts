@@ -222,3 +222,39 @@ export function checkRateLimit(key: string): { allowed: boolean; retryAfterMinut
     errorMessage: "Bạn đã gửi đơn hàng quá nhanh liên tiếp. Vui lòng đợi 15 phút hoặc gọi trực tiếp hotline của quán.",
   });
 }
+
+// 5. Kiểm Tra Giờ Mở Cửa (09:00 - 22:00 Giờ Việt Nam GMT+7)
+export function validateOpeningHours(): { isOpen: boolean; currentVnTime: string; error?: string } {
+  const now = new Date();
+  const vnTimeFormatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    hour12: false,
+    hour: "numeric",
+    minute: "numeric",
+  });
+
+  const parts = vnTimeFormatter.formatToParts(now);
+  const hour = parseInt(parts.find((p) => p.type === "hour")?.value || "0", 10);
+  const minute = parseInt(parts.find((p) => p.type === "minute")?.value || "0", 10);
+  const currentMinutes = hour * 60 + minute;
+
+  const OPEN_MINUTES = 9 * 60; // 09:00
+  const CLOSE_MINUTES = 22 * 60; // 22:00
+
+  const formattedHour = String(hour).padStart(2, "0");
+  const formattedMinute = String(minute).padStart(2, "0");
+  const currentVnTime = `${formattedHour}:${formattedMinute}`;
+
+  const isOpen = currentMinutes >= OPEN_MINUTES && currentMinutes < CLOSE_MINUTES;
+
+  if (!isOpen) {
+    return {
+      isOpen: false,
+      currentVnTime,
+      error: `Quán chỉ nhận đơn đặt hàng từ 09:00 đến 22:00 hàng ngày (Hiện tại là ${currentVnTime}). Quý khách vui lòng quay lại trong khung giờ mở cửa nhé!`,
+    };
+  }
+
+  return { isOpen: true, currentVnTime };
+}
+

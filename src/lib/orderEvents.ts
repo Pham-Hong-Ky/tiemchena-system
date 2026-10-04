@@ -7,7 +7,4 @@ const globalForEvents = globalThis as unknown as {
 };
 
 export const orderEvents = globalForEvents.orderEvents ?? new OrderEventEmitter();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForEvents.orderEvents = orderEvents;
-}
+globalForEvents.orderEvents = orderEvents;

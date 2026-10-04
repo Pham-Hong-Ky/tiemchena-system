@@ -72,6 +72,8 @@ export interface OrderType {
   finalAmount: number;
   voucherCode?: string | null;
   items?: OrderItemType[];
+  completedOrdersCount?: number;
+  isLoyalCustomer?: boolean;
   createdAt: string;
   updatedAt?: string;
 }

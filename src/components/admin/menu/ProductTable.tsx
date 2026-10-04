@@ -187,6 +187,11 @@ export function ProductTable({
                           <div>
                             <div className="font-extrabold text-slate-900 text-sm">{p.name}</div>
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                              {!p.isAvailable && (
+                                <span className="bg-red-100 text-red-700 text-[10px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-0.5 border border-red-200">
+                                  🚫 Hết Hàng
+                                </span>
+                              )}
                               {p.isHot && (
                                 <span className="bg-red-100 text-red-700 text-[10px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                                   <Flame className="w-2.5 h-2.5" /> HOT

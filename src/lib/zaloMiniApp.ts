@@ -34,15 +34,52 @@ export async function getZaloProfile(): Promise<ZaloUser | null> {
   return null;
 }
 
+export async function copyTextToClipboard(text: string): Promise<boolean> {
+  if (!text || typeof window === "undefined") return false;
+
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (err) {
+    console.warn("navigator.clipboard error, fallback to execCommand:", err);
+  }
+
+  try {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand("copy");
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (err) {
+    console.error("execCommand fallback failed:", err);
+    return false;
+  }
+}
+
 import { SHOP_ENV } from "@/config/shopEnv";
 
 export function openZaloShopChat(
   phone: string = SHOP_ENV.zaloPhone,
   message?: string
 ) {
-  const cleanPhone = phone.replace(/[^0-9]/g, "");
-  const encodedText = message ? `?text=${encodeURIComponent(message)}` : "";
-  const url = `https://zalo.me/${cleanPhone}${encodedText}`;
+  const cleanPhone = (phone || SHOP_ENV.zaloPhone).replace(/[^0-9]/g, "");
+
+  // Tự động sao chép nội dung vào Clipboard nếu có tin nhắn
+  if (message) {
+    copyTextToClipboard(message);
+  }
+
+  // Zalo cá nhân CHỈ hỗ trợ đường dẫn chuẩn https://zalo.me/{số_điện_thoại}
+  // Gắn ?text=... sẽ khiến máy chủ Zalo lỗi định tuyến và chuyển hướng sang https://zalo.me/vi/
+  const url = `https://zalo.me/${cleanPhone}`;
   if (typeof window !== "undefined") {
     const win = window.open(url, "_blank");
     if (!win || win.closed || typeof win.closed === "undefined") {

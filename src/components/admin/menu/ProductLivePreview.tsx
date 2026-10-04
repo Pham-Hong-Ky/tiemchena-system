@@ -131,14 +131,30 @@ export function ProductLivePreview({
           <div className="p-4 pt-0 flex items-center gap-2">
             <button
               type="button"
-              className="flex-1 inline-flex items-center justify-center gap-1 bg-orange-600 text-white font-bold py-2 rounded-xl text-xs shadow-xs"
+              disabled={!isAvailable}
+              className={`flex-1 inline-flex items-center justify-center gap-1 font-bold py-2 rounded-xl text-xs shadow-xs transition ${
+                isAvailable
+                  ? "bg-orange-600 text-white"
+                  : "bg-slate-200 text-slate-400 cursor-not-allowed"
+              }`}
             >
-              <Plus className="w-3.5 h-3.5" /> Thêm vào giỏ
+              {isAvailable ? (
+                <>
+                  <Plus className="w-3.5 h-3.5" /> Thêm vào giỏ
+                </>
+              ) : (
+                <span>Hết hàng</span>
+              )}
             </button>
             <button
               type="button"
+              disabled={!isAvailable}
               title="Tùy chọn Topping"
-              className="inline-flex items-center justify-center bg-slate-100 text-slate-700 p-2 rounded-xl"
+              className={`inline-flex items-center justify-center p-2 rounded-xl ${
+                isAvailable
+                  ? "bg-slate-100 text-slate-700"
+                  : "bg-slate-100 text-slate-300 cursor-not-allowed"
+              }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
             </button>

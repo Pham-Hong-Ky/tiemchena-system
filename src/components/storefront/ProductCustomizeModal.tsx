@@ -67,6 +67,7 @@ export function ProductCustomizeModal({
   const totalPrice = singleItemPrice * quantity;
 
   const handleConfirm = () => {
+    if (product.isAvailable === false) return;
     if (editingCartItem) {
       updateCartItem(editingCartItem.cartItemId, {
         quantity,
@@ -103,11 +104,22 @@ export function ProductCustomizeModal({
                 Đang chỉnh sửa
               </span>
             )}
+            {!product.isAvailable && (
+              <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-md font-bold">
+                Hết hàng
+              </span>
+            )}
           </div>
         </div>
 
         {/* Content */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1">
+          {!product.isAvailable && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-2.5 text-red-700 text-xs font-bold">
+              <span>🚫</span>
+              <span>Món này hiện đang tạm hết hàng và chưa thể đặt. Quý khách vui lòng tham khảo món khác!</span>
+            </div>
+          )}
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h3 className="text-xl font-extrabold text-slate-900">{product.name}</h3>
@@ -202,16 +214,21 @@ export function ProductCustomizeModal({
 
           {/* Confirm Button */}
           <button
+            disabled={!product.isAvailable}
             onClick={handleConfirm}
             className={`flex-1 text-white font-bold py-3 px-4 rounded-xl shadow-md flex items-center justify-between transition active:scale-95 cursor-pointer relative ${
-              isEditMode
+              !product.isAvailable
+                ? "bg-slate-400 cursor-not-allowed shadow-none"
+                : isEditMode
                 ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20"
                 : config.colors.primaryBtn
             }`}
           >
-            {!isEditMode && <ButtonFestiveDecorator />}
+            {product.isAvailable && !isEditMode && <ButtonFestiveDecorator />}
             <span className="flex items-center gap-1.5">
-              {isEditMode ? (
+              {!product.isAvailable ? (
+                <span>Món Hiện Đang Hết Hàng</span>
+              ) : isEditMode ? (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Lưu Thay Đổi</span>

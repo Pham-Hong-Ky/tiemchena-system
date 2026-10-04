@@ -18,6 +18,8 @@ import {
 import { OrderType } from "@/types";
 import { useTheme } from "@/context/ThemeContext";
 import { SHOP_ENV } from "@/config/shopEnv";
+import { openZaloShopChat } from "@/lib/zaloMiniApp";
+import { toast } from "@/context/ToastContext";
 
 interface OrderSuccessModalProps {
   order: OrderType | null;
@@ -63,6 +65,30 @@ export function OrderSuccessModal({
       }
     }
   }, [order, bankId, accountNo]);
+
+  const fullZaloMessage = React.useMemo(() => {
+    if (!order) return "";
+    const itemsList =
+      order.items && order.items.length > 0
+        ? order.items
+            .map((it, idx) => {
+              return `${idx + 1}. ${it.quantity}x ${it.productName} = ${it.itemTotal.toLocaleString("vi-VN")}đ`;
+            })
+            .join("\n")
+        : "";
+
+    return (
+      `🍧 [ĐƠN HÀNG TIỆM CHÈ NA]\n` +
+      `Mã đơn: #${order.orderCode}\n` +
+      `Khách hàng: ${order.customerName}\n` +
+      `Số điện thoại: ${order.customerPhone}\n` +
+      `Địa chỉ nhận: ${order.customerAddress}\n\n` +
+      (itemsList ? `📋 MÓN ĂN:\n${itemsList}\n\n` : "") +
+      `💵 TỔNG TIỀN: ${order.finalAmount.toLocaleString("vi-VN")}đ\n` +
+      (order.note ? `📝 Ghi chú: ${order.note}\n\n` : "\n") +
+      `Quán kiểm tra và gửi món sớm giúp mình nhé!`
+    );
+  }, [order]);
 
   if (!order) return null;
 
@@ -168,17 +194,41 @@ export function OrderSuccessModal({
               </div>
             </div>
           ) : (
-            <div className="bg-blue-50/80 border border-blue-200 rounded-2xl p-4 text-center space-y-2">
-              <div className="flex items-center justify-center gap-1 text-xs font-bold text-blue-900">
-                <MessageSquare className="w-4 h-4 text-blue-600" />
-                <span>Chốt Đơn Qua Zalo Trực Tiếp</span>
+            <div className="bg-blue-50/90 border border-blue-200 rounded-2xl p-4 text-left space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-blue-900">
+                  <MessageSquare className="w-4 h-4 text-blue-600" />
+                  <span>Nội Dung Đơn Hàng Gửi Zalo</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCopy(fullZaloMessage, "zalo_msg")}
+                  className="inline-flex items-center gap-1 bg-white hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold px-2 py-1 rounded-lg text-[11px] transition cursor-pointer shadow-2xs"
+                >
+                  {copiedText === "zalo_msg" ? (
+                    <>
+                      <Check className="w-3 h-3 text-emerald-600" />
+                      <span className="text-emerald-700">Đã chép</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3 h-3" />
+                      <span>Sao chép đơn</span>
+                    </>
+                  )}
+                </button>
               </div>
-              <p className="text-lg font-black text-blue-700">
-                {order.finalAmount.toLocaleString("vi-VN")}đ
-              </p>
-              <p className="text-[11px] text-blue-600">
-                Thông tin đơn hàng đã được chuẩn bị sẵn trong Zalo. Quán sẽ kiểm tra và phản hồi bạn ngay lập tức!
-              </p>
+
+              <div className="bg-white p-3 rounded-xl border border-blue-100 font-mono text-[11px] text-slate-700 max-h-36 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+                {fullZaloMessage}
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200/80 rounded-xl p-2.5 text-[11px] text-amber-900 leading-normal flex items-start gap-1.5">
+                <span className="text-sm leading-none">💡</span>
+                <span>
+                  <strong>Lưu ý:</strong> Khi mở Zalo, bạn chỉ cần <strong>Nhấn Dán (Paste / Ctrl+V)</strong> vào khung chat rồi ấn <strong>Gửi</strong> là quán nhận được đơn ngay!
+                </span>
+              </div>
             </div>
           )}
 
@@ -201,24 +251,24 @@ export function OrderSuccessModal({
 
         {/* Actions */}
         <div className="p-4 bg-slate-50 border-t border-slate-100 grid grid-cols-2 gap-2">
-          <a
-            href={`https://zalo.me/${zaloPhone}?text=${encodeURIComponent(
-              `Chào Tiệm Chè Na, mình vừa đặt đơn #${order.orderCode} (${order.finalAmount.toLocaleString("vi-VN")}đ). Giao đến: ${order.customerAddress}. Quán kiểm tra giúp mình nhé!`
-            )}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition shadow-sm"
+          <button
+            type="button"
+            onClick={() => {
+              openZaloShopChat(zaloPhone, fullZaloMessage);
+              toast.success("Đã sao chép đơn! Bạn chỉ cần dán (Paste) vào khung chat Zalo.");
+            }}
+            className="inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition shadow-sm cursor-pointer active:scale-95"
           >
             <MessageSquare className="w-4 h-4" />
-            <span>Nhắn Zalo</span>
-          </a>
+            <span>Mở Zalo Gửi Đơn</span>
+          </button>
 
           <button
             onClick={() => {
               onClose();
               onTrackOrder(order.customerPhone || order.orderCode);
             }}
-            className={`inline-flex items-center justify-center gap-1.5 ${config.colors.primaryBtn} font-bold py-2.5 px-3 rounded-xl text-xs transition cursor-pointer`}
+            className={`inline-flex items-center justify-center gap-1.5 ${config.colors.primaryBtn} font-bold py-2.5 px-3 rounded-xl text-xs transition cursor-pointer active:scale-95`}
           >
             <SearchCode className="w-4 h-4" />
             <span>Theo Dõi Đơn</span>

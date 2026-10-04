@@ -10,6 +10,7 @@ import {
   MapPin,
   Trash2,
   Ban,
+  ShieldAlert,
 } from "lucide-react";
 import { OrderType } from "@/types";
 
@@ -18,6 +19,7 @@ interface AdminOrderCardProps {
   onPrintBill: () => void;
   onQuickDelete: () => void;
   onCancelOrder: () => void;
+  onBlacklistOrder?: () => void;
   onPatchOrder: (patch: { orderStatus?: string; paymentStatus?: string }) => void;
 }
 
@@ -26,23 +28,22 @@ export function AdminOrderCard({
   onPrintBill,
   onQuickDelete,
   onCancelOrder,
+  onBlacklistOrder,
   onPatchOrder,
 }: AdminOrderCardProps) {
   const isPending = order.orderStatus === "PENDING";
-  const isPreparing = order.orderStatus === "PREPARING";
-  const isDelivering = order.orderStatus === "DELIVERING";
+  const isConfirmed = order.orderStatus === "CONFIRMED" || order.orderStatus === "PREPARING" || order.orderStatus === "DELIVERING";
   const isCompleted = order.orderStatus === "COMPLETED";
   const isCancelled = order.orderStatus === "CANCELLED";
+  const isPaid = order.paymentStatus === "PAID";
 
   return (
     <div
       className={`bg-white rounded-2xl border shadow-sm flex flex-col justify-between overflow-hidden transition hover:shadow-md ${
         isPending
           ? "border-amber-400 ring-2 ring-amber-400/20"
-          : isPreparing
-          ? "border-orange-400"
-          : isDelivering
-          ? "border-blue-400"
+          : isConfirmed
+          ? "border-blue-400 ring-2 ring-blue-400/20"
           : isCancelled
           ? "border-rose-300 bg-rose-50/15 opacity-90"
           : "border-slate-200"
@@ -60,23 +61,17 @@ export function AdminOrderCard({
               {order.orderCode}
             </span>
             <span
-              className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase ${
-                isPending
-                  ? "bg-amber-100 text-amber-800"
-                  : isPreparing
-                  ? "bg-orange-100 text-orange-800"
-                  : isDelivering
-                  ? "bg-blue-100 text-blue-800"
-                  : isCompleted
+              className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase ${
+                isCompleted
                   ? "bg-emerald-100 text-emerald-800"
-                  : "bg-rose-100 text-rose-800"
+                  : isCancelled
+                  ? "bg-rose-100 text-rose-800"
+                  : isConfirmed
+                  ? "bg-blue-100 text-blue-800"
+                  : "bg-amber-100 text-amber-800"
               }`}
             >
-              {isPending && "Chờ Duyệt"}
-              {isPreparing && "Bếp Đang Làm"}
-              {isDelivering && "Đang Giao"}
-              {isCompleted && "Hoàn Thành"}
-              {isCancelled && "Đã Hủy / Rác"}
+              {isCompleted ? "Đã Hoàn Thành" : isCancelled ? "Đã Hủy / Rác" : isConfirmed ? "Đã Nhận Đơn" : "Chờ Duyệt"}
             </span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">
@@ -117,9 +112,18 @@ export function AdminOrderCard({
       <div className="p-4 space-y-3">
         <div className="flex justify-between items-start text-xs border-b border-slate-100 pb-2.5">
           <div className="space-y-1">
-            <p className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
-              <span>{order.customerName}</span>
-            </p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-extrabold text-slate-900 text-sm">{order.customerName}</span>
+              {order.isLoyalCustomer || ((order.completedOrdersCount ?? 0) >= 2) ? (
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300/90 flex items-center gap-1 shadow-2xs">
+                  ⭐ Khách Quen
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200/80 flex items-center gap-1">
+                  🌱 Khách Mới
+                </span>
+              )}
+            </div>
             <p className="text-slate-500 flex items-center gap-1 font-mono">
               <Phone className="w-3 h-3 text-slate-400" />
               <a href={`tel:${order.customerPhone}`} className="hover:underline text-orange-600">
@@ -223,41 +227,56 @@ export function AdminOrderCard({
 
       {/* Workflow Actions */}
       <div className="p-3 bg-slate-50 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs font-bold">
+        {/* Bước 1: Chờ Duyệt ➔ Nhận Đơn */}
         {isPending && (
           <button
-            onClick={() => onPatchOrder({ orderStatus: "PREPARING" })}
-            className="col-span-2 bg-orange-600 hover:bg-orange-700 text-white py-2.5 rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
+            onClick={() => onPatchOrder({ orderStatus: "CONFIRMED" })}
+            className="col-span-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer font-bold shadow-xs active:scale-95"
           >
-            <ChefHat className="w-4 h-4" /> Nhận Đơn & Bếp Làm
+            <span>👨‍🍳 Nhận Đơn Hàng</span>
           </button>
         )}
 
-        {isPreparing && (
-          <button
-            onClick={() => onPatchOrder({ orderStatus: "DELIVERING" })}
-            className="col-span-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
-          >
-            <Bike className="w-4 h-4" /> Đã Làm Xong ➔ Giao Hàng
-          </button>
-        )}
-
-        {isDelivering && (
-          <button
-            onClick={() =>
-              onPatchOrder({
-                orderStatus: "COMPLETED",
-                paymentStatus: "PAID",
-              })
-            }
-            className="col-span-2 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
-          >
-            <CheckCircle2 className="w-4 h-4" /> Hoàn Thành Đơn
-          </button>
+        {/* Bước 2: Đã Nhận Đơn ➔ Đã Thanh Toán & Hoàn Thành */}
+        {isConfirmed && (
+          <>
+            {!isPaid ? (
+              <>
+                <button
+                  onClick={() => onPatchOrder({ paymentStatus: "PAID" })}
+                  className="bg-amber-600 hover:bg-amber-700 text-white py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1 cursor-pointer font-bold shadow-xs active:scale-95"
+                  title="Xác nhận khách đã trả tiền mặt"
+                >
+                  <span>💵 Đã Thu Tiền</span>
+                </button>
+                <button
+                  onClick={() =>
+                    onPatchOrder({
+                      orderStatus: "COMPLETED",
+                      paymentStatus: "PAID",
+                    })
+                  }
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1 cursor-pointer font-bold shadow-xs active:scale-95"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Hoàn Thành</span>
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => onPatchOrder({ orderStatus: "COMPLETED" })}
+                className="col-span-2 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer font-bold shadow-xs active:scale-95"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Hoàn Thành Đơn Hàng</span>
+              </button>
+            )}
+          </>
         )}
 
         {isCompleted && (
           <div className="col-span-2 text-center text-emerald-600 text-xs font-bold py-1.5 flex items-center justify-center gap-1">
-            <CheckCircle2 className="w-4 h-4" /> Đơn hàng hoàn tất
+            <CheckCircle2 className="w-4 h-4" /> Đơn hàng đã hoàn tất
           </div>
         )}
 
@@ -266,22 +285,44 @@ export function AdminOrderCard({
             <span className="text-rose-600 text-xs font-bold flex items-center gap-1">
               <Ban className="w-3.5 h-3.5" /> Đơn hàng đã hủy
             </span>
-            <button
-              onClick={onQuickDelete}
-              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-xs"
-            >
-              <Trash2 className="w-3.5 h-3.5" /> Xóa đơn rác
-            </button>
+            <div className="flex items-center gap-1.5">
+              {onBlacklistOrder && !order.note?.includes("ĐÃ CHẶN BOM HÀNG") && (
+                <button
+                  onClick={onBlacklistOrder}
+                  className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-xs"
+                  title="Chặn số điện thoại này vào danh sách đen"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-600" /> Chặn SĐT
+                </button>
+              )}
+              <button
+                onClick={onQuickDelete}
+                className="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-xs"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Xóa
+              </button>
+            </div>
           </div>
         )}
 
         {!isCompleted && !isCancelled && (
-          <button
-            onClick={onCancelOrder}
-            className="col-span-2 text-slate-400 hover:text-rose-600 py-1 text-[11px] font-normal cursor-pointer flex items-center justify-center gap-1 transition"
-          >
-            <Ban className="w-3 h-3" /> Hủy đơn hàng này
-          </button>
+          <div className="col-span-2 flex items-center justify-between pt-1 border-t border-slate-200/50">
+            <button
+              onClick={onCancelOrder}
+              className="text-slate-400 hover:text-slate-600 py-0.5 text-[11px] font-medium cursor-pointer flex items-center gap-1 transition"
+            >
+              <Ban className="w-3 h-3" /> Hủy đơn
+            </button>
+            {onBlacklistOrder && (
+              <button
+                onClick={onBlacklistOrder}
+                className="text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer flex items-center gap-1 transition border border-rose-200/60"
+                title="Chặn số điện thoại này vào danh sách đen và hủy đơn"
+              >
+                <ShieldAlert className="w-3 h-3" /> 🚫 Chặn Bom Hàng
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>

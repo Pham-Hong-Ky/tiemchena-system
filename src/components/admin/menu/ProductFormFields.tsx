@@ -269,14 +269,18 @@ export function ProductFormFields({
           <span>Banner nổi bật 🌟</span>
         </label>
 
-        <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700">
+        <label className={`flex items-center gap-2 cursor-pointer font-bold px-3 py-1.5 rounded-xl border transition ${
+          formIsAvailable
+            ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+            : "bg-red-50 border-red-200 text-red-800"
+        }`}>
           <input
             type="checkbox"
             checked={formIsAvailable}
             onChange={(e) => setFormIsAvailable(e.target.checked)}
-            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
           />
-          <span>Đang mở bán</span>
+          <span>{formIsAvailable ? "Đang mở bán (Có sẵn)" : "🚫 Hết hàng (Khóa đặt món)"}</span>
         </label>
       </div>
     </div>

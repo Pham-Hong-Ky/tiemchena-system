@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { ProductType } from "@/types";
+import { toast } from "@/context/ToastContext";
 
 export interface CartTopping {
   id: string;
@@ -93,6 +94,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [cart, appliedVoucher, isLoaded]);
 
   const addToCart = (product: ProductType, quantity = 1, selectedToppings: CartTopping[] = [], note = "") => {
+    if (product.isAvailable === false) {
+      toast.error(`Món "${product.name}" hiện đang hết hàng, không thể thêm vào giỏ!`);
+      return;
+    }
     const toppingIds = selectedToppings.map((t) => t.id).sort().join("-");
     const cartItemId = `${product.id}_${toppingIds}_${note.trim().toLowerCase()}`;
 

@@ -55,6 +55,13 @@ function SignatureDishCard({ product, config, onAdd }: SignatureDishCardProps) {
           >
             <BadgeIcon className="w-3.5 h-3.5" /> {badgeLabel}
           </div>
+          {!product.isAvailable && (
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center">
+              <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-md">
+                Hết Hàng
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Title */}
@@ -73,10 +80,11 @@ function SignatureDishCard({ product, config, onAdd }: SignatureDishCardProps) {
           {product.price.toLocaleString("vi-VN")}đ
         </span>
         <button
+          disabled={!product.isAvailable}
           onClick={onAdd}
-          className="inline-flex items-center justify-center gap-1.5 bg-[#15803d] hover:bg-[#166534] text-white py-2.5 px-5 rounded-xl font-extrabold text-sm sm:text-base cursor-pointer transition active:scale-95 shadow-md"
+          className="inline-flex items-center justify-center gap-1.5 bg-[#15803d] hover:bg-[#166534] text-white py-2.5 px-5 rounded-xl font-extrabold text-sm sm:text-base cursor-pointer transition active:scale-95 shadow-md disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed"
         >
-          <span>+ Chọn Món</span>
+          <span>{product.isAvailable ? "+ Chọn Món" : "Hết hàng"}</span>
         </button>
       </div>
     </div>

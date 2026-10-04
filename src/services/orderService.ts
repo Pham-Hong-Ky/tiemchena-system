@@ -5,6 +5,7 @@ import {
   validateCustomerName,
   validateCustomerAddress,
   checkRateLimit,
+  validateOpeningHours,
 } from "@/lib/orderValidation";
 
 export interface CreateOrderInput {
@@ -44,13 +45,37 @@ export const orderService = {
       ];
     }
 
-    return prisma.order.findMany({
+    const orders = await prisma.order.findMany({
       where,
       include: {
         items: true,
       },
       orderBy: { createdAt: "desc" },
       take: filters?.limit || 100,
+    });
+
+    const phones = Array.from(new Set(orders.map((o) => o.customerPhone).filter(Boolean)));
+    if (phones.length === 0) return orders;
+
+    // Đếm số đơn đã hoàn thành (COMPLETED) của từng số điện thoại
+    const completedGroups = await prisma.order.groupBy({
+      by: ["customerPhone"],
+      where: {
+        customerPhone: { in: phones },
+        orderStatus: "COMPLETED",
+      },
+      _count: { id: true },
+    });
+
+    const completedMap = new Map(completedGroups.map((g) => [g.customerPhone, g._count.id]));
+
+    return orders.map((order) => {
+      const count = completedMap.get(order.customerPhone) || 0;
+      return {
+        ...order,
+        completedOrdersCount: count,
+        isLoyalCustomer: count >= 2,
+      };
     });
   },
 
@@ -88,13 +113,38 @@ export const orderService = {
 
   // Tạo đơn hàng mới
   async createOrder(data: CreateOrderInput, clientIp: string) {
+    // 0. Kiểm tra giờ mở cửa của quán (09:00 - 22:00)
+    const timeCheck = validateOpeningHours();
+    if (!timeCheck.isOpen) {
+      throw new Error(timeCheck.error || "Quán chỉ nhận đơn đặt hàng từ 09:00 đến 22:00");
+    }
+
+    // 0.1 Kiểm tra Blacklist (SĐT hoặc IP đã bị chặn do bom hàng)
+    const cleanPhone = (data.customerPhone || "").replace(/[\s.-]/g, "");
+    try {
+      const isBlacklisted = await (prisma as any).blacklist?.findFirst({
+        where: {
+          OR: [
+            { phone: cleanPhone },
+            ...(clientIp ? [{ ipAddress: clientIp }] : []),
+          ],
+        },
+      });
+      if (isBlacklisted) {
+        throw new Error(
+          "Số điện thoại hoặc thiết bị này đã bị tạm khóa do có lịch sử bom/hủy đơn. Quý khách vui lòng liên hệ trực tiếp hotline quán để được hỗ trợ!"
+        );
+      }
+    } catch (e: any) {
+      if (e.message?.includes("tạm khóa do có lịch sử bom")) throw e;
+    }
+
     // 1. Chống Bot / Honeypot
     if (data.website_hp && data.website_hp.trim() !== "") {
       throw new Error("Spam detected");
     }
 
     // 2. Rate limit
-    const cleanPhone = (data.customerPhone || "").replace(/[\s.-]/g, "");
     const rateLimitKey = `${clientIp}_${cleanPhone}`;
     const rateCheck = checkRateLimit(rateLimitKey);
     if (!rateCheck.allowed) {
@@ -133,6 +183,9 @@ export const orderService = {
     for (const item of data.items) {
       const dbProduct = dbProducts.find((p) => p.id === item.id);
       if (!dbProduct) throw new Error(`Món ăn không tồn tại hoặc đã ngừng bán`);
+      if (!dbProduct.isAvailable) {
+        throw new Error(`Món "${dbProduct.name}" hiện đang hết hàng, quý khách vui lòng chọn món khác!`);
+      }
 
       const qty = Math.max(1, Math.min(99, Number(item.quantity) || 1));
       let toppingSum = 0;
@@ -209,7 +262,8 @@ export const orderService = {
         customerPhone: cleanPhone,
         customerAddress: data.customerAddress.trim(),
         note: finalNote,
-        paymentMethod: data.paymentMethod || "ZALO",
+        ...(clientIp ? { ipAddress: clientIp } : {}),
+        paymentMethod: data.paymentMethod || "COD",
         paymentStatus: "UNPAID",
         orderStatus: "PENDING",
         totalAmount,
@@ -219,7 +273,7 @@ export const orderService = {
         items: {
           create: orderItemsData,
         },
-      },
+      } as any,
       include: {
         items: true,
       },
@@ -227,6 +281,53 @@ export const orderService = {
 
     orderEvents.emit("new_order", order);
     return order;
+  },
+
+  // Chặn khách bom hàng & Hủy đơn hàng
+  async blacklistAndCancelOrder(id: string, reason = "Bom hàng / Hủy đơn ảo") {
+    const order = await prisma.order.findUnique({
+      where: { id },
+    });
+    if (!order) throw new Error("Không tìm thấy đơn hàng");
+
+    const cleanPhone = (order.customerPhone || "").replace(/[\s.-]/g, "");
+    const orderIp = (order as any).ipAddress || null;
+
+    // Thêm vào bảng Blacklist
+    if (cleanPhone) {
+      try {
+        await (prisma as any).blacklist.upsert({
+          where: { phone: cleanPhone },
+          update: {
+            ipAddress: orderIp || undefined,
+            reason,
+          },
+          create: {
+            phone: cleanPhone,
+            ipAddress: orderIp || null,
+            reason,
+          },
+        });
+      } catch (e) {
+        console.error("Failed to add to blacklist:", e);
+      }
+    }
+
+    const updated = await prisma.order.update({
+      where: { id },
+      data: {
+        orderStatus: "CANCELLED",
+        note: order.note
+          ? `[🚫 ĐÃ CHẶN BOM HÀNG] ${order.note}`
+          : "[🚫 ĐÃ CHẶN BOM HÀNG]",
+      },
+      include: {
+        items: true,
+      },
+    });
+
+    orderEvents.emit("order_updated", updated);
+    return updated;
   },
 
   // Cập nhật trạng thái đơn hàng (Admin)
