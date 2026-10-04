@@ -17,7 +17,7 @@ interface ProductModalProps {
   toppings: ToppingType[];
   allProducts: ProductType[];
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (savedProduct?: ProductType) => void;
 }
 
 export function ProductModal({
@@ -197,7 +197,7 @@ export function ProductModal({
       }
 
       toast.success(editingProduct ? "Đã cập nhật món ăn thành công!" : "Đã thêm món ăn mới thành công!");
-      onSaved();
+      onSaved(data.data);
       onClose();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Đã xảy ra lỗi khi lưu món");

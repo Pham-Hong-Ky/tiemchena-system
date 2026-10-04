@@ -20,9 +20,10 @@ export default function AdminMenuPage() {
 
   const fetchData = async () => {
     try {
+      const timestamp = Date.now();
       const [prodRes, catRes] = await Promise.all([
-        fetch("/api/products", { cache: "no-store" }),
-        fetch("/api/categories", { cache: "no-store" }),
+        fetch(`/api/products?t=${timestamp}`, { cache: "no-store", headers: { "Pragma": "no-cache" } }),
+        fetch(`/api/categories?t=${timestamp}`, { cache: "no-store", headers: { "Pragma": "no-cache" } }),
       ]);
       const prodData = await prodRes.json();
       const catData = await catRes.json();
@@ -37,6 +38,19 @@ export default function AdminMenuPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleProductSaved = (savedProduct?: ProductType) => {
+    if (savedProduct) {
+      setProducts((prev) => {
+        const exists = prev.some((p) => p.id === savedProduct.id);
+        if (exists) {
+          return prev.map((p) => (p.id === savedProduct.id ? savedProduct : p));
+        }
+        return [savedProduct, ...prev];
+      });
+    }
+    fetchData();
   };
 
   useEffect(() => {
@@ -228,7 +242,7 @@ export default function AdminMenuPage() {
         toppings={toppings}
         allProducts={products}
         onClose={() => setIsModalOpen(false)}
-        onSaved={fetchData}
+        onSaved={handleProductSaved}
       />
       {/* Confirm Delete Modal */}
       <ConfirmModal
