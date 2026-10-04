@@ -389,13 +389,15 @@ export function CartDeliveryForm({
               Nếu bản đồ định vị chưa chính xác hoặc bạn muốn giao tới địa chỉ đặc biệt, hãy nhắn tin trực tiếp để quán hỗ trợ giao tận tay nhé:
             </p>
             <a
-              href={`https://zalo.me/${SHOP_ENV.zaloPhone}`}
+              href={SHOP_ENV.zaloPhone ? `https://zalo.me/${SHOP_ENV.zaloPhone}` : `https://zalo.me`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-extrabold shadow-xs transition active:scale-95 cursor-pointer mt-1"
             >
               <MessageCircle className="w-3.5 h-3.5" />
-              <span>Nhắn Zalo Quán ({SHOP_ENV.zaloPhone})</span>
+              <span>
+                Nhắn Zalo Quán {SHOP_ENV.zaloPhone ? `(${SHOP_ENV.zaloPhone})` : ""}
+              </span>
               <ExternalLink className="w-3 h-3 opacity-80" />
             </a>
           </div>
@@ -445,7 +447,7 @@ export function CartDeliveryForm({
               )}
             </div>
             <p className="text-[10px] text-slate-500 leading-tight">
-              Thanh toán trực tiếp cho shipper khi nhận chè.
+              Thanh toán trực tiếp khi nhận hàng.
             </p>
           </button>
 

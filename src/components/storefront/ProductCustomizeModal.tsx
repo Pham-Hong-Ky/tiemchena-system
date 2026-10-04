@@ -187,7 +187,7 @@ export function ProductCustomizeModal({
               type="text"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="VD: Không cay, nhiều rau, ít đá, để sốt riêng..."
+              placeholder="Nhập ghi chú..."
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition"
             />
           </div>
