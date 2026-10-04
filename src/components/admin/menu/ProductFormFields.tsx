@@ -1,7 +1,17 @@
 "use client";
 
 import React, { useRef } from "react";
-import { Upload, Image as ImageIcon, Crop } from "lucide-react";
+import {
+  Upload,
+  Image as ImageIcon,
+  Crop,
+  Tag,
+  Flame,
+  Star,
+  Sparkles,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import { CategoryType, ProductType } from "@/types";
 import { toast } from "@/context/ToastContext";
 
@@ -149,7 +159,7 @@ export function ProductFormFields({
           >
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.icon || "📂"} {c.name}
+                {c.name}
               </option>
             ))}
           </select>
@@ -171,7 +181,7 @@ export function ProductFormFields({
       <div className="space-y-3 pt-2 border-t border-slate-100">
         <h4 className="font-extrabold uppercase tracking-wider text-[11px] flex items-center gap-1.5 text-orange-600">
           <ImageIcon className="w-3.5 h-3.5" />
-          <span>2. Hình Ảnh Món Ăn (Tỉ lệ chuẩn 4:3)</span>
+          <span>2. Hình Ảnh Món Ăn </span>
         </h4>
 
         <div className="flex items-center gap-2">
@@ -225,63 +235,171 @@ export function ProductFormFields({
         )}
       </div>
 
-      {/* 3. Badges & Status */}
-      <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-4 items-center">
-        <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700">
-          <input
-            type="checkbox"
-            checked={formIsHot}
-            onChange={(e) => setFormIsHot(e.target.checked)}
-            className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500"
-          />
-          <span>Gắn nhãn HOT 🔥</span>
+      {/* 3. Marketing Badges (HOT, BESTSELLER, BANNER) */}
+      <div className="space-y-2.5 pt-2 border-t border-slate-100">
+        <label className="font-bold text-slate-700 block text-xs">
+          Nhãn
         </label>
 
-        <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700">
-          <input
-            type="checkbox"
-            checked={formIsBestseller}
-            onChange={(e) => setFormIsBestseller(e.target.checked)}
-            className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500"
-          />
-          <span>Gắn nhãn Bestseller ⭐</span>
-        </label>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          {/* Tag HOT */}
+          <div
+            onClick={() => setFormIsHot(!formIsHot)}
+            className={`flex items-center justify-between p-2.5 rounded-xl border transition cursor-pointer select-none ${
+              formIsHot
+                ? "bg-red-50/90 border-red-300 ring-1 ring-red-400"
+                : "bg-slate-50 border-slate-200 hover:bg-slate-100"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full ${
+                  formIsHot
+                    ? "bg-red-500 text-white shadow-xs"
+                    : "bg-slate-200 text-slate-600"
+                }`}
+              >
+                <Flame className="w-3 h-3 fill-current" />
+                <span>HOT</span>
+              </span>
+              <span className="text-xs font-bold text-slate-800">Món Hot</span>
+            </div>
+            <input
+              type="checkbox"
+              checked={formIsHot}
+              onChange={(e) => setFormIsHot(e.target.checked)}
+              className="w-4 h-4 rounded text-red-600 focus:ring-red-500 cursor-pointer pointer-events-none"
+            />
+          </div>
 
-        <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700">
-          <input
-            type="checkbox"
-            checked={formIsOnBanner}
-            onChange={(e) => {
+          {/* Tag BESTSELLER */}
+          <div
+            onClick={() => setFormIsBestseller(!formIsBestseller)}
+            className={`flex items-center justify-between p-2.5 rounded-xl border transition cursor-pointer select-none ${
+              formIsBestseller
+                ? "bg-amber-50/90 border-amber-300 ring-1 ring-amber-400"
+                : "bg-slate-50 border-slate-200 hover:bg-slate-100"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full ${
+                  formIsBestseller
+                    ? "bg-amber-500 text-white shadow-xs"
+                    : "bg-slate-200 text-slate-600"
+                }`}
+              >
+                <Star className="w-3 h-3 fill-current" />
+                <span>BEST</span>
+              </span>
+              <span className="text-xs font-bold text-slate-800">Bán Chạy</span>
+            </div>
+            <input
+              type="checkbox"
+              checked={formIsBestseller}
+              onChange={(e) => setFormIsBestseller(e.target.checked)}
+              className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer pointer-events-none"
+            />
+          </div>
+
+          {/* Tag BANNER */}
+          <div
+            onClick={() => {
+              const nextVal = !formIsOnBanner;
               const MAX_BANNER = 8;
               const otherBannerCount = allProducts.filter(
                 (p) => p.isOnBanner && (!editingProduct || p.id !== editingProduct.id)
               ).length;
-              if (e.target.checked && otherBannerCount >= MAX_BANNER) {
+              if (nextVal && otherBannerCount >= MAX_BANNER) {
                 toast.warning(
                   `Đã có tối đa ${MAX_BANNER} món được ghim trên Banner trang chủ. Vui lòng bỏ bớt món trước!`
                 );
                 return;
               }
-              setFormIsOnBanner(e.target.checked);
+              setFormIsOnBanner(nextVal);
             }}
-            className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
-          />
-          <span>Banner nổi bật 🌟</span>
+            className={`flex items-center justify-between p-2.5 rounded-xl border transition cursor-pointer select-none ${
+              formIsOnBanner
+                ? "bg-purple-50/90 border-purple-300 ring-1 ring-purple-400"
+                : "bg-slate-50 border-slate-200 hover:bg-slate-100"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full ${
+                  formIsOnBanner
+                    ? "bg-purple-600 text-white shadow-xs"
+                    : "bg-slate-200 text-slate-600"
+                }`}
+              >
+                <Sparkles className="w-3 h-3 fill-current" />
+                <span>BANNER</span>
+              </span>
+              <span className="text-xs font-bold text-slate-800">Ghim Banner</span>
+            </div>
+            <input
+              type="checkbox"
+              checked={formIsOnBanner}
+              onChange={(e) => {
+                const MAX_BANNER = 8;
+                const otherBannerCount = allProducts.filter(
+                  (p) => p.isOnBanner && (!editingProduct || p.id !== editingProduct.id)
+                ).length;
+                if (e.target.checked && otherBannerCount >= MAX_BANNER) {
+                  toast.warning(
+                    `Đã có tối đa ${MAX_BANNER} món được ghim trên Banner trang chủ. Vui lòng bỏ bớt món trước!`
+                  );
+                  return;
+                }
+                setFormIsOnBanner(e.target.checked);
+              }}
+              className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer pointer-events-none"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Availability Status (Đang Mở Bán / Hết Hàng) */}
+      <div className="space-y-2 pt-2 border-t border-slate-100">
+        <label className="font-bold text-slate-700 block text-xs">
+          Trạng Thái Mở Bán *
         </label>
 
-        <label className={`flex items-center gap-2 cursor-pointer font-bold px-3 py-1.5 rounded-xl border transition ${
-          formIsAvailable
-            ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-            : "bg-red-50 border-red-200 text-red-800"
-        }`}>
-          <input
-            type="checkbox"
-            checked={formIsAvailable}
-            onChange={(e) => setFormIsAvailable(e.target.checked)}
-            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-          />
-          <span>{formIsAvailable ? "Đang mở bán (Có sẵn)" : "🚫 Hết hàng (Khóa đặt món)"}</span>
-        </label>
+        <div className="grid grid-cols-2 gap-3">
+          {/* Status: Available */}
+          <button
+            type="button"
+            onClick={() => setFormIsAvailable(true)}
+            className={`flex items-center gap-2.5 p-3 rounded-xl border transition text-left cursor-pointer ${
+              formIsAvailable
+                ? "bg-emerald-50 border-emerald-300 ring-2 ring-emerald-500 text-emerald-900 shadow-xs"
+                : "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-600 opacity-60"
+            }`}
+          >
+            <CheckCircle2 className={`w-5 h-5 shrink-0 ${formIsAvailable ? "text-emerald-600" : "text-slate-400"}`} />
+            <div>
+              <p className="text-xs font-black">Đang Mở Bán</p>
+              <p className="text-[10px] text-slate-500">Khách có thể đặt món</p>
+            </div>
+          </button>
+
+          {/* Status: Out of Stock */}
+          <button
+            type="button"
+            onClick={() => setFormIsAvailable(false)}
+            className={`flex items-center gap-2.5 p-3 rounded-xl border transition text-left cursor-pointer ${
+              !formIsAvailable
+                ? "bg-red-50 border-red-300 ring-2 ring-red-500 text-red-900 shadow-xs"
+                : "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-600 opacity-60"
+            }`}
+          >
+            <XCircle className={`w-5 h-5 shrink-0 ${!formIsAvailable ? "text-red-600" : "text-slate-400"}`} />
+            <div>
+              <p className="text-xs font-black">Tạm Hết Hàng</p>
+              <p className="text-[10px] text-slate-500">Khóa đặt, gắn nhãn Hết hàng</p>
+            </div>
+          </button>
+        </div>
       </div>
     </div>
   );

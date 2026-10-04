@@ -16,6 +16,7 @@ interface ProductModalProps {
   categories: CategoryType[];
   toppings: ToppingType[];
   allProducts: ProductType[];
+  defaultCategoryId?: string;
   onClose: () => void;
   onSaved: (savedProduct?: ProductType) => void;
 }
@@ -26,6 +27,7 @@ export function ProductModal({
   categories,
   toppings,
   allProducts,
+  defaultCategoryId,
   onClose,
   onSaved,
 }: ProductModalProps) {
@@ -126,7 +128,7 @@ export function ProductModal({
       setFormName("");
       setFormPrice("");
       setFormOriginalPrice("");
-      setFormCategoryId(categories[0]?.id || "");
+      setFormCategoryId(defaultCategoryId && categories.some(c => c.id === defaultCategoryId) ? defaultCategoryId : (categories[0]?.id || ""));
       setFormDescription("");
       setFormImage("");
       setImageDimensions(null);
@@ -136,7 +138,7 @@ export function ProductModal({
       setFormIsAvailable(true);
       setFormOptions([]);
     }
-  }, [isOpen, editingProduct, categories, toppings]);
+  }, [isOpen, editingProduct, categories, toppings, defaultCategoryId]);
 
   const handleCropComplete = (url: string) => {
     setCropperOpen(false);

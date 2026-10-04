@@ -8,8 +8,6 @@ import {
   ChefHat,
   FolderTree,
   Users,
-  Tag,
-  MessageSquareHeart,
   TrendingUp,
   Settings,
   Store,
@@ -18,7 +16,9 @@ import {
   Menu,
   X,
   LogOut,
-  BellRing
+  BellRing,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { isSoundEnabled, setSoundEnabledStorage, playOrderNotificationSound } from "@/lib/notificationSound";
 import { toast } from "@/context/ToastContext";
@@ -32,6 +32,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Sidebar toggle state
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isMenuSubOpen, setIsMenuSubOpen] = useState(true);
 
   useEffect(() => {
     setSoundEnabled(isSoundEnabled());
@@ -67,12 +68,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return <>{children}</>;
   }
 
+  const isMenuSectionActive = pathname.startsWith("/admin/menu");
+
+  const menuSubItems = [
+    { href: "/admin/menu/an-vat", label: "Đồ Ăn Vặt" },
+    { href: "/admin/menu/che", label: "Món Chè" },
+    { href: "/admin/menu/do-uong", label: "Đồ Uống" },
+    { href: "/admin/menu", label: "Tất Cả Món" },
+  ];
+
   const navItems = [
     { href: "/admin", label: "Đơn Hàng", icon: ChefHat },
-    { href: "/admin/menu", label: "Quản Lý Món Ăn", icon: UtensilsCrossed },
+    {
+      href: "/admin/menu",
+      label: "Quản Lý Món Ăn",
+      icon: UtensilsCrossed,
+      isSubMenu: true,
+      subItems: menuSubItems,
+    },
     { href: "/admin/categories", label: "Danh Mục Món", icon: FolderTree },
     { href: "/admin/users", label: "Khách Hàng", icon: Users },
-    { href: "/admin/tags", label: "Quản Lý Thẻ (Tags)", icon: Tag },
     { href: "/admin/stats", label: "Báo Cáo Doanh Thu", icon: TrendingUp },
     { href: "/admin/settings", label: "Cấu Hình Quán", icon: Settings },
   ];
@@ -132,7 +147,79 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <nav className="p-3 space-y-1.5">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const isSub = Boolean(item.isSubMenu);
+              const isActive = isSub ? isMenuSectionActive : pathname === item.href;
+
+              if (isSub) {
+                return (
+                  <div key={item.label} className="space-y-1">
+                    <div
+                      className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition group cursor-pointer ${
+                        isActive
+                          ? "bg-slate-800 text-orange-400 border border-slate-700/60"
+                          : "hover:bg-slate-800/70 hover:text-white text-slate-400"
+                      } ${isCollapsed ? "md:justify-center md:px-0" : ""}`}
+                      onClick={() => !isCollapsed && setIsMenuSubOpen(!isMenuSubOpen)}
+                      title={isCollapsed ? item.label : undefined}
+                    >
+                      <Link
+                        href={item.href}
+                        onClick={(e) => {
+                          if (!isCollapsed) {
+                            // allow normal navigation
+                          }
+                        }}
+                        className={`flex items-center gap-3 flex-1 ${
+                          isCollapsed ? "justify-center" : ""
+                        }`}
+                      >
+                        <Icon className="w-4 h-4 shrink-0 transition group-hover:scale-110 text-orange-500" />
+                        {!isCollapsed && <span className="truncate">{item.label}</span>}
+                      </Link>
+
+                      {!isCollapsed && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsMenuSubOpen(!isMenuSubOpen);
+                          }}
+                          className="p-1 text-slate-500 hover:text-white transition"
+                        >
+                          {isMenuSubOpen ? (
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          ) : (
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Submenu Items */}
+                    {!isCollapsed && isMenuSubOpen && (
+                      <div className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-slate-800 ml-5 my-1">
+                        {menuSubItems.map((sub) => {
+                          const isSubActive = pathname === sub.href;
+                          return (
+                            <Link
+                              key={sub.href}
+                              href={sub.href}
+                              className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition ${
+                                isSubActive
+                                  ? "bg-orange-600 text-white shadow-xs shadow-orange-600/30"
+                                  : "text-slate-400 hover:text-white hover:bg-slate-800/80"
+                              }`}
+                            >
+                              <span className="truncate">{sub.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   key={item.href}

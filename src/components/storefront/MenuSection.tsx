@@ -52,7 +52,8 @@ export function MenuSection({
       const matchCat =
         selectedCategory === "all" ||
         p.categoryId === selectedCategory ||
-        p.category?.slug === selectedCategory;
+        p.category?.slug === selectedCategory ||
+        (selectedCategory === "che-do-uong" && (p.category?.slug === "che" || p.category?.slug === "do-uong"));
 
       const matchSearch =
         !searchQuery.trim() ||
@@ -139,7 +140,7 @@ export function MenuSection({
                   : "bg-slate-50 text-slate-700 hover:bg-slate-100"
               }`}
             >
-              <span>🍽️ Tất Cả</span>
+              <span>Tất Cả</span>
               <span className="text-[10px] opacity-75">({products.length})</span>
             </button>
 
@@ -159,7 +160,6 @@ export function MenuSection({
                       : "bg-slate-50 text-slate-700 hover:bg-slate-100"
                   }`}
                 >
-                  <span>{cat.icon || "🍴"}</span>
                   <span>{cat.name}</span>
                   <span className="text-[10px] opacity-75">({count})</span>
                 </button>

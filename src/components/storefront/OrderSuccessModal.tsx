@@ -8,18 +8,17 @@ import {
   X,
   Copy,
   Check,
-  MessageSquare,
-  SearchCode,
   Clock,
   MapPin,
   Phone,
+  MessageSquare,
   QrCode as QrIcon
 } from "lucide-react";
 import { OrderType } from "@/types";
 import { useTheme } from "@/context/ThemeContext";
 import { SHOP_ENV } from "@/config/shopEnv";
-import { openZaloShopChat } from "@/lib/zaloMiniApp";
 import { toast } from "@/context/ToastContext";
+import { generateVietQrEmvCo } from "@/lib/vietqr";
 
 interface OrderSuccessModalProps {
   order: OrderType | null;
@@ -36,10 +35,9 @@ export function OrderSuccessModal({
   const [copiedText, setCopiedText] = useState("");
   const [localQr, setLocalQr] = useState<string>("");
 
-  const bankId = SHOP_ENV.bankId;
-  const accountNo = SHOP_ENV.accountNumber;
-  const accountName = SHOP_ENV.accountName;
-  const zaloPhone = SHOP_ENV.zaloPhone;
+  const bankId = SHOP_ENV.bankId || "MB";
+  const accountNo = SHOP_ENV.accountNumber || "0986479285";
+  const accountName = SHOP_ENV.accountName || "TIEM CHE NA";
 
   useEffect(() => {
     if (order) {
@@ -58,8 +56,13 @@ export function OrderSuccessModal({
       if (order.paymentMethod === "VIETQR") {
         const amount = order.finalAmount;
         const memo = `${order.orderCode} ${order.customerPhone}`;
-        const transferInfo = `2. STK: ${accountNo} (${bankId}) - So tien: ${amount}d - ND: ${memo}`;
-        QRCode.toDataURL(transferInfo, { width: 240, margin: 1 })
+        const emv = generateVietQrEmvCo({
+          bankId,
+          accountNumber: accountNo,
+          amount,
+          memo,
+        });
+        QRCode.toDataURL(emv, { width: 280, margin: 1 })
           .then((url) => setLocalQr(url))
           .catch(() => {});
       }
@@ -247,32 +250,6 @@ export function OrderSuccessModal({
               <span>Khách nhận: <strong>{order.customerName} ({order.customerPhone})</strong></span>
             </div>
           </div>
-        </div>
-
-        {/* Actions */}
-        <div className="p-4 bg-slate-50 border-t border-slate-100 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              openZaloShopChat(zaloPhone, fullZaloMessage);
-              toast.success("Đã sao chép đơn! Bạn chỉ cần dán (Paste) vào khung chat Zalo.");
-            }}
-            className="inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition shadow-sm cursor-pointer active:scale-95"
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>Mở Zalo Gửi Đơn</span>
-          </button>
-
-          <button
-            onClick={() => {
-              onClose();
-              onTrackOrder(order.customerPhone || order.orderCode);
-            }}
-            className={`inline-flex items-center justify-center gap-1.5 ${config.colors.primaryBtn} font-bold py-2.5 px-3 rounded-xl text-xs transition cursor-pointer active:scale-95`}
-          >
-            <SearchCode className="w-4 h-4" />
-            <span>Theo Dõi Đơn</span>
-          </button>
         </div>
       </div>
     </div>

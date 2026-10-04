@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { orderController } from "@/controllers/orderController";
 import { productController } from "@/controllers/productController";
 import { categoryController } from "@/controllers/categoryController";
-import { tagController } from "@/controllers/tagController";
 import { customerController } from "@/controllers/customerController";
 import { settingController } from "@/controllers/settingController";
 import { statController } from "@/controllers/statController";
@@ -50,22 +49,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return categoryController.get(request);
   }
 
-  // 5. Tags
-  if (p1 === "tags" && !p2) {
-    return tagController.get();
-  }
-
-  // 6. Settings
+  // 5. Settings
   if (p1 === "settings" && !p2) {
     return settingController.get();
   }
 
-  // 7. Stats
+  // 6. Stats
   if (p1 === "stats" && !p2) {
     return statController.get();
   }
 
-  // 8. Geocode
+  // 7. Geocode
   if (p1 === "geocode") {
     if (p2 === "estimate" || p2 === "direction") {
       return geocodeController.estimate(request);
@@ -75,22 +69,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
   }
 
-  // 9. Admin auth / me
+  // 8. Admin auth / me
   if (p1 === "admin" && p2 === "auth" && p3 === "me") {
     return authController.me();
   }
 
-  // 10. Admin sync-categories
+  // 9. Admin sync-categories
   if (p1 === "admin" && p2 === "sync-categories") {
     return adminController.syncCategories();
   }
 
-  // 11. Proxy image
+  // 10. Proxy image
   if (p1 === "proxy-image" && !p2) {
     return proxyImageController.proxy(request);
   }
 
-  // 12. SSE orders
+  // 11. SSE orders
   if (p1 === "sse" && p2 === "orders") {
     return sseController.streamOrders(request);
   }
@@ -120,42 +114,37 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return categoryController.post(request);
   }
 
-  // 4. Tags: POST /api/tags
-  if (p1 === "tags" && !p2) {
-    return tagController.post(request);
-  }
-
-  // 5. SePay Webhook: POST /api/sepay
+  // 4. SePay Webhook: POST /api/sepay
   if (p1 === "sepay" && !p2) {
     return sepayController.webhook(request);
   }
 
-  // 6. Vouchers: POST /api/vouchers/apply
+  // 5. Vouchers: POST /api/vouchers/apply
   if (p1 === "vouchers" && p2 === "apply") {
     return voucherController.apply(request);
   }
 
-  // 7. Admin Auth: POST /api/admin/auth/login
+  // 6. Admin Auth: POST /api/admin/auth/login
   if (p1 === "admin" && p2 === "auth" && p3 === "login") {
     return authController.login(request);
   }
 
-  // 8. Admin Auth: POST /api/admin/auth/logout
+  // 7. Admin Auth: POST /api/admin/auth/logout
   if (p1 === "admin" && p2 === "auth" && p3 === "logout") {
     return authController.logout();
   }
 
-  // 9. Admin: POST /api/admin/reset-banner
+  // 8. Admin: POST /api/admin/reset-banner
   if (p1 === "admin" && p2 === "reset-banner") {
     return adminController.resetBanner();
   }
 
-  // 10. Upload: POST /api/upload
+  // 9. Upload: POST /api/upload
   if (p1 === "upload" && !p2) {
     return uploadController.upload(request);
   }
 
-  // 11. Geocode: POST /api/geocode/estimate
+  // 10. Geocode: POST /api/geocode/estimate
   if (p1 === "geocode" && (p2 === "estimate" || p2 === "direction" || !p2)) {
     return geocodeController.estimate(request);
   }
@@ -180,12 +169,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     return categoryController.put(request);
   }
 
-  // 3. Tags: PUT /api/tags
-  if (p1 === "tags" && !p2) {
-    return tagController.put(request);
-  }
-
-  // 4. Settings: PUT /api/settings
+  // 3. Settings: PUT /api/settings
   if (p1 === "settings" && !p2) {
     return settingController.put(request);
   }
@@ -231,11 +215,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   // 3. Categories: DELETE /api/categories
   if (p1 === "categories" && !p2) {
     return categoryController.delete(request);
-  }
-
-  // 4. Tags: DELETE /api/tags
-  if (p1 === "tags" && !p2) {
-    return tagController.delete(request);
   }
 
   return NextResponse.json({ success: false, error: "API Route not found" }, { status: 404 });
