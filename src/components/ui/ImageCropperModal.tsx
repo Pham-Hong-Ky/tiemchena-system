@@ -197,40 +197,82 @@ export function ImageCropperModal({
     });
   };
 
-  // Direct upload without crop (Keep original)
+  // Direct upload without crop (Scale down & Compress original to max 1200px for super fast upload)
   const handleUseOriginal = async () => {
-    if (imageSrc.startsWith("data:")) {
-      try {
-        setIsExporting(true);
-        // Convert dataUrl to blob and upload
-        const res = await fetch(imageSrc);
-        const blob = await res.blob();
-        const file = new File([blob], `original-${Date.now()}.jpg`, { type: blob.type || "image/jpeg" });
-        const formData = new FormData();
-        formData.append("file", file);
-        const uploadRes = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-        const data = await uploadRes.json();
-        if (data.success && data.url) {
-          onCropComplete(data.url);
-        } else {
-          onCropComplete(imageSrc);
+    try {
+      setIsExporting(true);
+      const img = imageRef.current;
+      
+      if (imageSrc.startsWith("data:") && img) {
+        // Compress large dataURL on client canvas before uploading
+        const maxDim = 1200;
+        let w = img.naturalWidth || img.width;
+        let h = img.naturalHeight || img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
         }
-      } catch {
-        onCropComplete(imageSrc);
-      } finally {
-        setIsExporting(false);
-        onClose();
+
+        const compCanvas = document.createElement("canvas");
+        compCanvas.width = w;
+        compCanvas.height = h;
+        const compCtx = compCanvas.getContext("2d");
+        if (compCtx) {
+          compCtx.drawImage(img, 0, 0, w, h);
+          compCanvas.toBlob(async (blob) => {
+            if (!blob) {
+              onCropComplete(imageSrc);
+              onClose();
+              return;
+            }
+            try {
+              const file = new File([blob], `img-${Date.now()}.jpg`, { type: "image/jpeg" });
+              const formData = new FormData();
+              formData.append("file", file);
+
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+              const uploadRes = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+                signal: controller.signal,
+              });
+              clearTimeout(timeoutId);
+
+              const data = await uploadRes.json();
+              if (data.success && data.url) {
+                onCropComplete(data.url);
+              } else {
+                onCropComplete(compCanvas.toDataURL("image/jpeg", 0.82));
+              }
+            } catch {
+              onCropComplete(compCanvas.toDataURL("image/jpeg", 0.82));
+            } finally {
+              setIsExporting(false);
+              onClose();
+            }
+          }, "image/jpeg", 0.82);
+          return;
+        }
       }
-    } else {
+
       onCropComplete(imageSrc);
       onClose();
+    } catch {
+      onCropComplete(imageSrc);
+      onClose();
+    } finally {
+      setIsExporting(false);
     }
   };
 
-  // Perform Final Crop Export at high resolution (800x600)
+  // Perform Final Crop Export at high quality & optimized file size (800x600 @ 0.82)
   const handleApplyCrop = async () => {
     const img = imageRef.current;
     if (!img) return;
@@ -270,10 +312,12 @@ export function ImageCropperModal({
       ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
       ctx.restore();
 
-      // Convert to blob and upload as a static file or base64
+      // Convert to lightweight compressed blob (JPEG quality 0.82 - only ~35KB)
       exportCanvas.toBlob(async (blob) => {
         if (!blob) {
+          onCropComplete(exportCanvas.toDataURL("image/jpeg", 0.82));
           setIsExporting(false);
+          onClose();
           return;
         }
 
@@ -282,27 +326,34 @@ export function ImageCropperModal({
         formData.append("file", file);
 
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 6000);
+
           const res = await fetch("/api/upload", {
             method: "POST",
             body: formData,
+            signal: controller.signal,
           });
+          clearTimeout(timeoutId);
+
           const data = await res.json();
           if (data.success && data.url) {
             onCropComplete(data.url);
           } else {
-            // Fallback to data URL
-            onCropComplete(exportCanvas.toDataURL("image/jpeg", 0.92));
+            onCropComplete(exportCanvas.toDataURL("image/jpeg", 0.82));
           }
         } catch {
-          onCropComplete(exportCanvas.toDataURL("image/jpeg", 0.92));
+          // Fast fallback to lightweight compressed data URL
+          onCropComplete(exportCanvas.toDataURL("image/jpeg", 0.82));
         } finally {
           setIsExporting(false);
           onClose();
         }
-      }, "image/jpeg", 0.92);
+      }, "image/jpeg", 0.82);
     } catch (err) {
       console.error(err);
       setIsExporting(false);
+      onClose();
     }
   };
 
