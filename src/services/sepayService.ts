@@ -17,30 +17,42 @@ export interface SepayWebhookPayload {
 
 export const sepayService = {
   async processWebhook(payload: SepayWebhookPayload, authHeader: string) {
-    // 1. Verify SePay API Key (if configured)
+    const anyPayload = payload as Record<string, any>;
+
+    // 1. Verify SePay API Key (if configured in ENV)
     const configuredKey = process.env.SEPAY_WEBHOOK_KEY;
-    if (configuredKey && authHeader !== `Apikey ${configuredKey}`) {
-      throw new Error("UNAUTHORIZED_SEPAY");
+    if (configuredKey && configuredKey.trim()) {
+      const expectedKey = configuredKey.trim();
+      const cleanHeader = (authHeader || "").trim().replace(/^Apikey\s+/i, "");
+      if (cleanHeader !== expectedKey && authHeader !== `Apikey ${expectedKey}`) {
+        console.warn("[SePay Webhook] Unauthorized attempt with header:", authHeader);
+        throw new Error("UNAUTHORIZED_SEPAY");
+      }
     }
 
-    const {
-      gateway,
-      content = "",
-      transferType,
-      transferAmount = 0,
-      referenceCode,
-    } = payload;
+    const gateway = anyPayload.gateway || anyPayload.bank_brand_name || "Bank";
+    const transferType = anyPayload.transferType || anyPayload.transfer_type || "in";
+    const transferAmount = Number(
+      anyPayload.transferAmount ||
+      anyPayload.amount_in ||
+      anyPayload.amountIn ||
+      anyPayload.accumulated ||
+      0
+    );
+    const referenceCode = anyPayload.referenceCode || anyPayload.reference_number || anyPayload.id || "";
 
     // Only process incoming transfers
-    if (transferType !== "in" && transferType !== undefined) {
+    if (transferType !== "in" && transferType !== "IN" && transferType !== undefined) {
       return { success: true, message: "Ignored outgoing transfer" };
     }
 
-    const cleanContent = String(content).toUpperCase();
+    // Kết hợp tất cả các trường text mà SePay có thể gửi về
+    const rawContent = `${anyPayload.content || ""} ${anyPayload.description || ""} ${anyPayload.code || ""} ${anyPayload.transaction_content || ""}`;
+    const cleanContent = rawContent.toUpperCase();
 
-    // 2. Extract potential Order Code (e.g. TCN-123456, TCN 123456, TCN123456)
+    // 2. Extract potential Order Code (e.g. TCN-123456, TCN 123456, TCN123456, TCN_123456)
     let matchedOrderCode: string | null = null;
-    const matchTCN = cleanContent.match(/TCN[\s-_]?(\d{6})/i);
+    const matchTCN = cleanContent.match(/TCN[\s-_]?(\d{5,8})/i);
     if (matchTCN) {
       matchedOrderCode = `TCN-${matchTCN[1]}`;
     }
