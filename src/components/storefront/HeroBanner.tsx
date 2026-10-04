@@ -16,6 +16,7 @@ import { ButtonFestiveDecorator } from "@/components/theme/ButtonFestiveDecorato
 
 import { ProductType } from "@/types";
 import { getOptimizedImageUrl } from "@/lib/imageOptimizer";
+import { SHOP_ENV } from "@/config/shopEnv";
 
 interface HeroBannerProps {
   products?: ProductType[];
@@ -142,7 +143,7 @@ export function HeroBanner({ products = [], onSelectTag }: HeroBannerProps) {
             {/* Primary CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
               <a
-                href="https://zalo.me/0986479285"
+                href={`https://zalo.me/${SHOP_ENV.zaloPhone}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-6 py-3.5 rounded-2xl shadow-xl shadow-blue-950/20 transition transform active:scale-95"

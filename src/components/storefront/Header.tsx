@@ -15,6 +15,7 @@ import {
   SearchCode,
   ClipboardList
 } from "lucide-react";
+import { SHOP_ENV } from "@/config/shopEnv";
 
 interface HeaderProps {
   onOpenTracking: () => void;
@@ -93,13 +94,15 @@ export function Header({ onOpenTracking }: HeaderProps) {
           {/* Actions */}
           <div className="flex items-center gap-3 sm:gap-4">
             {/* Hotline Call */}
-            <a
-              href="tel:0986479285"
-              className="hidden sm:flex items-center gap-2 bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold px-3.5 py-2 rounded-xl transition border border-orange-200/60 text-sm"
-            >
-              <PhoneCall className="w-4 h-4 text-orange-600 animate-bounce" />
-              <span>0986.479.285</span>
-            </a>
+            {SHOP_ENV.hotline && (
+              <a
+                href={`tel:${SHOP_ENV.hotline}`}
+                className="hidden sm:flex items-center gap-2 bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold px-3.5 py-2 rounded-xl transition border border-orange-200/60 text-sm"
+              >
+                <PhoneCall className="w-4 h-4 text-orange-600 animate-bounce" />
+                <span>{SHOP_ENV.hotline}</span>
+              </a>
+            )}
 
             {/* Cart Trigger */}
             <button

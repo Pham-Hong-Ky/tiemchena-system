@@ -21,6 +21,7 @@ import {
 import { OrderType } from "@/types";
 import { useTheme } from "@/context/ThemeContext";
 import { ButtonFestiveDecorator } from "@/components/theme/ButtonFestiveDecorator";
+import { SHOP_ENV } from "@/config/shopEnv";
 
 interface OrderTrackingModalProps {
   initialPhone?: string;
@@ -205,8 +206,8 @@ export function OrderTrackingModal({
               <p className="text-xs sm:text-sm text-rose-700 font-bold">{error}</p>
               <p className="text-[11px] text-rose-500">
                 Nếu cần hỗ trợ gấp, vui lòng gọi trực tiếp hotline{" "}
-                <a href="tel:0986479285" className="font-extrabold underline text-rose-700">
-                  0986.479.285
+                <a href={`tel:${SHOP_ENV.hotline}`} className="font-extrabold underline text-rose-700">
+                  {SHOP_ENV.hotline}
                 </a>
               </p>
             </div>
@@ -419,13 +420,13 @@ export function OrderTrackingModal({
                 </div>
                 <div className="flex items-center gap-2">
                   <a
-                    href="tel:0986479285"
+                    href={`tel:${SHOP_ENV.hotline}`}
                     className="inline-flex items-center gap-1.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs px-3 py-1.5 rounded-xl shadow-xs transition"
                   >
-                    <PhoneCall className="w-3.5 h-3.5" /> Gọi 0986.479.285
+                    <PhoneCall className="w-3.5 h-3.5" /> Gọi {SHOP_ENV.hotline}
                   </a>
                   <a
-                    href={`https://zalo.me/0986479285?text=${encodeURIComponent(
+                    href={`https://zalo.me/${SHOP_ENV.zaloPhone}?text=${encodeURIComponent(
                       `Chào quán, mình muốn kiểm tra đơn hàng số điện thoại ${selectedOrder.customerPhone} (Mã: ${selectedOrder.orderCode})`
                     )}`}
                     target="_blank"

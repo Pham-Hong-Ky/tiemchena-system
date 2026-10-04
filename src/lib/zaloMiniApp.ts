@@ -34,10 +34,19 @@ export async function getZaloProfile(): Promise<ZaloUser | null> {
   return null;
 }
 
-export function openZaloShopChat(phone: string = "0986479285", message?: string) {
+import { SHOP_ENV } from "@/config/shopEnv";
+
+export function openZaloShopChat(
+  phone: string = SHOP_ENV.zaloPhone,
+  message?: string
+) {
+  const cleanPhone = phone.replace(/[^0-9]/g, "");
   const encodedText = message ? `?text=${encodeURIComponent(message)}` : "";
-  const url = `https://zalo.me/${phone}${encodedText}`;
+  const url = `https://zalo.me/${cleanPhone}${encodedText}`;
   if (typeof window !== "undefined") {
-    window.open(url, "_blank");
+    const win = window.open(url, "_blank");
+    if (!win || win.closed || typeof win.closed === "undefined") {
+      window.location.href = url;
+    }
   }
 }

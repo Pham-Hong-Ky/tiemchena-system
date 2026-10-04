@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { OrderType } from "@/types";
 import { useTheme } from "@/context/ThemeContext";
+import { SHOP_ENV } from "@/config/shopEnv";
 
 interface OrderSuccessModalProps {
   order: OrderType | null;
@@ -33,9 +34,10 @@ export function OrderSuccessModal({
   const [copiedText, setCopiedText] = useState("");
   const [localQr, setLocalQr] = useState<string>("");
 
-  const bankId = process.env.NEXT_PUBLIC_VIETQR_BANK_ID || "MB";
-  const accountNo = process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NO || "0986479285";
-  const accountName = process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NAME || "TIEM CHE NA";
+  const bankId = SHOP_ENV.bankId;
+  const accountNo = SHOP_ENV.accountNumber;
+  const accountName = SHOP_ENV.accountName;
+  const zaloPhone = SHOP_ENV.zaloPhone;
 
   useEffect(() => {
     if (order) {
@@ -136,9 +138,9 @@ export function OrderSuccessModal({
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500">Số tài khoản:</span>
                   <div className="flex items-center gap-1">
-                    <span className="font-bold text-orange-600 font-mono">0986479285</span>
+                    <span className="font-bold text-orange-600 font-mono">{accountNo}</span>
                     <button
-                      onClick={() => handleCopy("0986479285", "stk")}
+                      onClick={() => handleCopy(accountNo, "stk")}
                       className="text-slate-400 hover:text-orange-600 cursor-pointer"
                     >
                       {copiedText === "stk" ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
@@ -200,12 +202,12 @@ export function OrderSuccessModal({
         {/* Actions */}
         <div className="p-4 bg-slate-50 border-t border-slate-100 grid grid-cols-2 gap-2">
           <a
-            href={`https://zalo.me/0986479285?text=${encodeURIComponent(
-              `Chào quán, mình vừa đặt đơn ${order.orderCode} (${order.finalAmount.toLocaleString("vi-VN")}đ). Quán kiểm tra giúp mình nhé!`
+            href={`https://zalo.me/${zaloPhone}?text=${encodeURIComponent(
+              `Chào Tiệm Chè Na, mình vừa đặt đơn #${order.orderCode} (${order.finalAmount.toLocaleString("vi-VN")}đ). Giao đến: ${order.customerAddress}. Quán kiểm tra giúp mình nhé!`
             )}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition"
+            className="inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition shadow-sm"
           >
             <MessageSquare className="w-4 h-4" />
             <span>Nhắn Zalo</span>

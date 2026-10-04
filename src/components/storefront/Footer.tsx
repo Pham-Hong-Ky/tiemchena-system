@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useTheme } from "@/context/ThemeContext";
 import { MapPin, Phone, Clock, MessageSquare, ShieldCheck, Heart, Zap } from "lucide-react";
+import { SHOP_ENV } from "@/config/shopEnv";
 
 export function Footer() {
   const { theme, config } = useTheme();
@@ -91,7 +92,7 @@ export function Footer() {
             </p>
             <div className="flex items-center gap-3 pt-1">
               <a
-                href="https://zalo.me/0986479285"
+                href={`https://zalo.me/${SHOP_ENV.zaloPhone}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-3.5 rounded-xl text-xs flex items-center gap-1.5 font-bold transition shadow-sm"
@@ -99,13 +100,15 @@ export function Footer() {
                 <MessageSquare className="w-4 h-4" />
                 <span>Zalo Quán</span>
               </a>
-              <a
-                href="tel:0986479285"
-                className={`${style.hotlineBtn} text-white py-2 px-3.5 rounded-xl text-xs flex items-center gap-1.5 font-bold transition shadow-sm`}
-              >
-                <Phone className="w-4 h-4" />
-                <span>Hotline</span>
-              </a>
+              {SHOP_ENV.hotline && (
+                <a
+                  href={`tel:${SHOP_ENV.hotline}`}
+                  className={`${style.hotlineBtn} text-white py-2 px-3.5 rounded-xl text-xs flex items-center gap-1.5 font-bold transition shadow-sm`}
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>Hotline</span>
+                </a>
+              )}
             </div>
           </div>
 
@@ -116,7 +119,7 @@ export function Footer() {
               <li className="flex items-start gap-2">
                 <MapPin className={`w-4 h-4 ${style.accentText} shrink-0 mt-0.5`} />
                 <a
-                  href={process.env.NEXT_PUBLIC_MAPS_URL || "https://www.google.com/maps/place/Ti%E1%BB%87m+Ch%C3%A8+Na/@20.9246936,105.8525684,17z/data=!3m1!4b1!4m6!3m5!1s0x3135ad006a26953d:0xf5c35b92ea669558!8m2!3d20.9246936!4d105.8551433!16s%2Fg%2F11w8t_kmh9"}
+                  href={SHOP_ENV.mapsUrl || "https://www.google.com/maps/place/Ti%E1%BB%87m+Ch%C3%A8+Na"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:underline hover:text-white transition"
@@ -125,12 +128,14 @@ export function Footer() {
                   Vũ Lăng, Ngũ Hiệp, Thanh Trì, Hà Nội (Gần chợ Ngũ Hiệp & Tecco)
                 </a>
               </li>
-              <li className="flex items-center gap-2">
-                <Phone className={`w-4 h-4 ${style.accentText} shrink-0`} />
-                <a href="tel:0986479285" className={`hover:underline font-bold ${style.accentText}`}>
-                  0986.479.285
-                </a>
-              </li>
+              {SHOP_ENV.hotline && (
+                <li className="flex items-center gap-2">
+                  <Phone className={`w-4 h-4 ${style.accentText} shrink-0`} />
+                  <a href={`tel:${SHOP_ENV.hotline}`} className={`hover:underline font-bold ${style.accentText}`}>
+                    {SHOP_ENV.hotline}
+                  </a>
+                </li>
+              )}
               <li className="flex items-center gap-2">
                 <Clock className={`w-4 h-4 ${style.accentText} shrink-0`} />
                 <span>09:00 - 22:30 hàng ngày</span>
@@ -146,7 +151,7 @@ export function Footer() {
               <li><a href="#mon-hot" className="hover:text-white transition font-medium">🔥 Món Bán Chạy Đặc Sản</a></li>
               <li><a href="#danh-gia" className="hover:text-white transition font-medium">⭐ Đánh Giá Từ Thực Khách</a></li>
               <li><a href="#menu" className="hover:text-white transition font-medium">🛒 Hướng Dẫn Đặt Món Online</a></li>
-              <li><a href="https://zalo.me/0986479285" target="_blank" rel="noopener noreferrer" className="hover:text-white transition font-medium">💬 Đặt Tiệc / Tư Vấn Zalo</a></li>
+              <li><a href={`https://zalo.me/${SHOP_ENV.zaloPhone}`} target="_blank" rel="noopener noreferrer" className="hover:text-white transition font-medium">💬 Đặt Tiệc / Tư Vấn Zalo</a></li>
             </ul>
           </div>
 
