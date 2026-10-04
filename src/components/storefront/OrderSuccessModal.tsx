@@ -36,8 +36,8 @@ export function OrderSuccessModal({
   const [localQr, setLocalQr] = useState<string>("");
 
   const bankId = SHOP_ENV.bankId || "MB";
-  const accountNo = SHOP_ENV.accountNumber || "0986479285";
-  const accountName = SHOP_ENV.accountName || "TIEM CHE NA";
+  const accountNo = SHOP_ENV.accountNumber || "836888181";
+  const accountName = SHOP_ENV.accountName || "HO KINH DOANH TIEM CHE NA";
 
   useEffect(() => {
     if (order) {
