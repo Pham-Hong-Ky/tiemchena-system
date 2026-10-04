@@ -1,20 +1,7 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Playfair_Display } from "next/font/google";
 import { ToastProvider } from "@/context/ToastContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import "./globals.css";
-
-const jakarta = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
-  subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700", "800"],
-});
-
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
-  subsets: ["latin", "vietnamese"],
-  weight: ["600", "700", "800"],
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://tiemchena.com"),
@@ -41,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className="scroll-smooth">
-      <body className={`${jakarta.variable} ${playfair.variable} font-sans antialiased bg-slate-50 text-slate-900 selection:bg-amber-500 selection:text-white min-h-screen flex flex-col`}>
+      <body className="font-sans antialiased bg-slate-50 text-slate-900 selection:bg-amber-500 selection:text-white min-h-screen flex flex-col">
         <ToastProvider>
           <ThemeProvider>
             {children}
