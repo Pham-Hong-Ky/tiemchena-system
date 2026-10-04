@@ -65,18 +65,22 @@ export const productService = {
     if (!origPriceCheck.valid) throw new Error(origPriceCheck.error);
 
     const MAX_BANNER = 8;
-    if (Boolean(isOnBanner)) {
-      const bannerCount = await prisma.product.count({ where: { isOnBanner: true } });
-      if (bannerCount >= MAX_BANNER) {
-        throw new Error(`Đã đạt giới hạn tối đa ${MAX_BANNER} món hiển thị trên Banner.`);
-      }
-    }
-
     const toppingsCheck = validateToppingsJson(toppingsJson);
     if (!toppingsCheck.valid) throw new Error(toppingsCheck.error);
 
+    // Parallelize category and banner checks
+    const [categoryExists, bannerCount] = await Promise.all([
+      prisma.category.findUnique({ where: { id: categoryId } }),
+      Boolean(isOnBanner)
+        ? prisma.product.count({ where: { isOnBanner: true } })
+        : Promise.resolve(0),
+    ]);
+
+    if (Boolean(isOnBanner) && bannerCount >= MAX_BANNER) {
+      throw new Error(`Đã đạt giới hạn tối đa ${MAX_BANNER} món hiển thị trên Banner.`);
+    }
+
     let validCategoryId = categoryId;
-    const categoryExists = await prisma.category.findUnique({ where: { id: categoryId } });
     if (!categoryExists) {
       const fallbackCat = await prisma.category.findFirst({ orderBy: { sortOrder: "asc" } });
       if (fallbackCat) validCategoryId = fallbackCat.id;
@@ -125,16 +129,6 @@ export const productService = {
       validatedOrigPrice = origPriceCheck.value;
     }
 
-    const MAX_BANNER = 8;
-    if (isOnBanner !== undefined && Boolean(isOnBanner)) {
-      const bannerCount = await prisma.product.count({
-        where: { isOnBanner: true, id: { not: id } },
-      });
-      if (bannerCount >= MAX_BANNER) {
-        throw new Error(`Đã đạt giới hạn tối đa ${MAX_BANNER} món trên Banner.`);
-      }
-    }
-
     let validatedToppingsJsonStr: string | undefined;
     if (toppingsJson !== undefined) {
       const toppingsCheck = validateToppingsJson(toppingsJson);
@@ -142,11 +136,20 @@ export const productService = {
       validatedToppingsJsonStr = toppingsCheck.jsonString;
     }
 
-    let validCategoryId: string | undefined = undefined;
-    if (categoryId) {
-      const cat = await prisma.category.findUnique({ where: { id: categoryId } });
-      if (cat) validCategoryId = cat.id;
+    const MAX_BANNER = 8;
+    // Parallelize category and banner checks if needed
+    const [cat, bannerCount] = await Promise.all([
+      categoryId ? prisma.category.findUnique({ where: { id: categoryId } }) : Promise.resolve(null),
+      isOnBanner !== undefined && Boolean(isOnBanner)
+        ? prisma.product.count({ where: { isOnBanner: true, id: { not: id } } })
+        : Promise.resolve(0),
+    ]);
+
+    if (isOnBanner !== undefined && Boolean(isOnBanner) && bannerCount >= MAX_BANNER) {
+      throw new Error(`Đã đạt giới hạn tối đa ${MAX_BANNER} món trên Banner.`);
     }
+
+    const validCategoryId = cat ? cat.id : undefined;
 
     const updated = await prisma.product.update({
       where: { id },
