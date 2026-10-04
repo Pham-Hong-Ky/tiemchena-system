@@ -25,6 +25,7 @@ export interface CreateOrderInput {
   website_hp?: string;
   shippingFee?: number;
   distanceKm?: number | null;
+  distanceSource?: string | null;
 }
 
 export const orderService = {
@@ -196,7 +197,8 @@ export const orderService = {
 
     let finalNote = data.note ? data.note.trim() : null;
     if (distanceKm !== null) {
-      const shipTag = `[Ship: ${distanceKm}km - ${shippingFee.toLocaleString("vi-VN")}đ]`;
+      const sourceTag = data.distanceSource ? ` (${data.distanceSource})` : "";
+      const shipTag = `[Ship: ${distanceKm}km - ${shippingFee.toLocaleString("vi-VN")}đ${sourceTag}]`;
       finalNote = finalNote ? `${shipTag} ${finalNote}` : shipTag;
     }
 

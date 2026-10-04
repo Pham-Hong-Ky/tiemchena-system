@@ -13,7 +13,6 @@ import { CartDrawer } from "@/components/storefront/CartDrawer";
 import { OrderSuccessModal } from "@/components/storefront/OrderSuccessModal";
 import { OrderTrackingModal } from "@/components/storefront/OrderTrackingModal";
 import { TrustSection } from "@/components/storefront/TrustSection";
-import { CustomerSurveySection } from "@/components/storefront/CustomerSurveySection";
 import { Footer } from "@/components/storefront/Footer";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
@@ -226,9 +225,6 @@ export function StorefrontView({
 
               {/* Trust & Guarantees */}
               <TrustSection />
-
-              {/* Khảo Sát Khách Hàng Tiệm Chè Na (Ở Dưới Cùng Trước Footer) */}
-              <CustomerSurveySection />
             </>
           )}
         </main>

@@ -67,11 +67,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   // 8. Geocode
   if (p1 === "geocode") {
+    if (p2 === "estimate" || p2 === "direction") {
+      return geocodeController.estimate(request);
+    }
     if (!p2 || p2 === "reverse") {
       return geocodeController.reverse(request);
-    }
-    if (p2 === "forward") {
-      return geocodeController.forward(request);
     }
   }
 
@@ -153,6 +153,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   // 10. Upload: POST /api/upload
   if (p1 === "upload" && !p2) {
     return uploadController.upload(request);
+  }
+
+  // 11. Geocode: POST /api/geocode/estimate
+  if (p1 === "geocode" && (p2 === "estimate" || p2 === "direction" || !p2)) {
+    return geocodeController.estimate(request);
   }
 
   return NextResponse.json({ success: false, error: "API Route not found" }, { status: 404 });

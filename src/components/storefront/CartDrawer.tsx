@@ -65,10 +65,9 @@ export function CartDrawer({
   // Geocode, Distance & Shipping Fee State
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [shippingFee, setShippingFee] = useState<number>(0);
-  const [isLocating, setIsLocating] = useState<boolean>(false);
-  const [isCheckingAddress, setIsCheckingAddress] = useState<boolean>(false);
   const [isOutOfRange, setIsOutOfRange] = useState<boolean>(false);
   const [rangeError, setRangeError] = useState<string>("");
+  const [distanceSource, setDistanceSource] = useState<"ward" | "pin" | "gps">("ward");
 
   // Flow & UI states
   const [formError, setFormError] = useState("");
@@ -90,92 +89,6 @@ export function CartDrawer({
 
   // Tính tổng tiền bao gồm phí ship
   const totalWithShipping = subtotal + shippingFee;
-
-  // 1. Lấy vị trí hiện tại bằng GPS (Miễn phí 100%)
-  const handleGetGpsLocation = () => {
-    if (typeof window === "undefined" || !navigator.geolocation) {
-      toast.warning("Thiết bị của bạn không hỗ trợ định vị GPS.");
-      return;
-    }
-
-    setIsLocating(true);
-    setFormError("");
-
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const res = await fetch(`/api/geocode/reverse?lat=${lat}&lng=${lng}`);
-          const json = await res.json();
-
-          if (json.success && json.data) {
-            setCustomerAddress(json.data.address || "");
-            setDistanceKm(json.data.distanceKm);
-            setShippingFee(json.data.shippingFee || 0);
-            setIsOutOfRange(!json.data.isWithinRange);
-
-            if (!json.data.isWithinRange) {
-              setRangeError(
-                `Vị trí của bạn cách quán ${json.data.distanceKm} km, vượt quá bán kính giao hàng tối đa (15 km). Quán chưa thể phục vụ đơn này!`
-              );
-              toast.error("Vượt quá bán kính giao hàng (tối đa 15km)!");
-            } else {
-              setRangeError("");
-              toast.success(`Đã định vị thành công! Cách quán ${json.data.distanceKm} km.`);
-            }
-          } else {
-            toast.error(json.error || "Không thể lấy địa chỉ từ GPS");
-          }
-        } catch (e) {
-          console.error("GPS Reverse Geocode error:", e);
-          toast.error("Lỗi khi kết nối dịch vụ định vị");
-        } finally {
-          setIsLocating(false);
-        }
-      },
-      (err) => {
-        setIsLocating(false);
-        if (err.code === err.PERMISSION_DENIED) {
-          toast.warning("Bạn đã từ chối quyền truy cập vị trí. Vui lòng tự nhập địa chỉ nhận hàng.");
-        } else {
-          toast.warning("Không thể lấy vị trí hiện tại. Vui lòng tự gõ địa chỉ.");
-        }
-      },
-      { timeout: 10000, enableHighAccuracy: true }
-    );
-  };
-
-  // 2. Tự động kiểm tra khoảng cách khi khách tự gõ địa chỉ
-  const handleCheckAddressDistance = async () => {
-    if (!customerAddress || customerAddress.trim().length < 5) return;
-
-    setIsCheckingAddress(true);
-    try {
-      const res = await fetch(
-        `/api/geocode/forward?address=${encodeURIComponent(customerAddress.trim())}`
-      );
-      const json = await res.json();
-
-      if (json.success && json.data) {
-        setDistanceKm(json.data.distanceKm);
-        setShippingFee(json.data.shippingFee || 0);
-        setIsOutOfRange(!json.data.isWithinRange);
-
-        if (!json.data.isWithinRange) {
-          setRangeError(
-            `Địa chỉ cách quán ${json.data.distanceKm} km, vượt quá bán kính giao hàng tối đa (15 km). Quán rất tiếc chưa thể phục vụ đơn này!`
-          );
-        } else {
-          setRangeError("");
-        }
-      }
-    } catch {
-      // Ignored
-    } finally {
-      setIsCheckingAddress(false);
-    }
-  };
 
   // Validate form
   const validateForm = (): boolean => {
@@ -212,6 +125,13 @@ export function CartDrawer({
       return false;
     }
 
+    if (distanceKm === null) {
+      const msg = "Địa chỉ chưa được xác định khoảng cách hoặc không hợp lệ. Vui lòng bấm 'Kiểm tra khoảng cách' hoặc chọn từ danh sách gợi ý.";
+      setFormError(msg);
+      toast.warning(msg);
+      return false;
+    }
+
     return true;
   };
 
@@ -236,6 +156,7 @@ export function CartDrawer({
           website_hp: websiteHp,
           shippingFee,
           distanceKm,
+          distanceSource,
         });
 
         setCurrentQrOrder(order);
@@ -264,6 +185,7 @@ export function CartDrawer({
         website_hp: websiteHp,
         shippingFee,
         distanceKm,
+        distanceSource,
       });
 
       const message = buildZaloOrderMessage({
@@ -469,13 +391,15 @@ export function CartDrawer({
                 formError={formError}
                 inZaloApp={inZaloApp}
                 distanceKm={distanceKm}
+                setDistanceKm={setDistanceKm}
                 shippingFee={shippingFee}
-                isLocating={isLocating}
-                isCheckingAddress={isCheckingAddress}
+                setShippingFee={setShippingFee}
                 isOutOfRange={isOutOfRange}
+                setIsOutOfRange={setIsOutOfRange}
                 rangeError={rangeError}
-                onGetGpsLocation={handleGetGpsLocation}
-                onCheckAddressDistance={handleCheckAddressDistance}
+                setRangeError={setRangeError}
+                distanceSource={distanceSource}
+                setDistanceSource={setDistanceSource}
               />
 
               {/* 3. Footer / Submit CTA */}
