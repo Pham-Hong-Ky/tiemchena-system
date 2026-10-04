@@ -7,8 +7,8 @@ export const SHOP_ENV = {
 
   // Cấu hình ngân hàng VietQR
   bankId: process.env.NEXT_PUBLIC_VIETQR_BANK_ID || "MB",
-  accountNumber: process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NO || "0986479285",
-  accountName: process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NAME || "TIEM CHE NA",
+  accountNumber: process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NO || "836888181",
+  accountName: process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NAME || "HO KINH DOANH TIEM CHE NA",
 
   // Maps và URL website
   mapsUrl: process.env.NEXT_PUBLIC_MAPS_URL || "",

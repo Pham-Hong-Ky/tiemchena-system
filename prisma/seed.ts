@@ -31,9 +31,9 @@ async function main() {
         "GIẢM NGAY 10% tổng hóa đơn khi đặt trước hoặc chốt đơn qua Zalo hôm nay!",
       qrBankId: process.env.NEXT_PUBLIC_VIETQR_BANK_ID || "MB",
       qrAccountNumber:
-        process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NO || "0986479285",
+        process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NO || "836888181",
       qrAccountName:
-        process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NAME || "TIEM CHE NA",
+        process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NAME || "HO KINH DOANH TIEM CHE NA",
       zaloUrl: "https://zalo.me/0986479285",
       isAcceptingOrders: true,
     },

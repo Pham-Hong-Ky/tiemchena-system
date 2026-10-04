@@ -122,8 +122,8 @@ model StoreSetting {
   openingHours       String   @default("09:00 - 22:30")
   bannerAnnouncement String   @default("GIẢM NGAY 10% tổng hóa đơn khi đặt trước hoặc chốt đơn qua Zalo hôm nay!")
   qrBankId           String   @default("MB") // Vietinbank, MB, VCB...
-  qrAccountNumber    String   @default("0986479285")
-  qrAccountName      String   @default("TIEM CHE NA")
+  qrAccountNumber    String   @default("836888181")
+  qrAccountName      String   @default("HO KINH DOANH TIEM CHE NA")
   zaloUrl            String   @default("https://zalo.me/0986479285")
   isAcceptingOrders  Boolean  @default(true)
   updatedAt          DateTime @updatedAt

@@ -72,7 +72,7 @@ export function generateVietQrEmvCo({
 }): string {
   const cleanBankKey = (bankId || "MB").toUpperCase().trim();
   const bankBin = BANK_BIN_MAP[cleanBankKey] || cleanBankKey;
-  const cleanAccountNo = (accountNumber || "0986479285").replace(/[\s.-]/g, "");
+  const cleanAccountNo = (accountNumber || "836888181").replace(/[\s.-]/g, "");
 
   // Tag 38: Beneficiary Info
   const napasGuid = tlv("00", "A000000727");

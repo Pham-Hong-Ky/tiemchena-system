@@ -32,8 +32,8 @@ export function VietQrPaymentModal({
   onClose,
   order,
   bankId = "MB",
-  accountName = "TIEM CHE NA",
-  accountNumber = "0986479285",
+  accountName = "HO KINH DOANH TIEM CHE NA",
+  accountNumber = "836888181",
   onPaymentSuccess,
 }: VietQrPaymentModalProps) {
   const [copiedMemo, setCopiedMemo] = useState(false);
@@ -45,8 +45,8 @@ export function VietQrPaymentModal({
 
   // Đảm bảo số tài khoản và ngân hàng luôn có giá trị an toàn
   const safeBankId = bankId || "MB";
-  const safeAccountNumber = accountNumber || "0986479285";
-  const safeAccountName = accountName || "TIEM CHE NA";
+  const safeAccountNumber = accountNumber || "836888181";
+  const safeAccountName = accountName || "HO KINH DOANH TIEM CHE NA";
 
   // Reset state and generate instant VietQR when a new order is passed
   useEffect(() => {
