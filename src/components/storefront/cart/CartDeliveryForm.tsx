@@ -41,8 +41,8 @@ interface CartDeliveryFormProps {
   setNote: (v: string) => void;
   websiteHp: string;
   setWebsiteHp: (v: string) => void;
-  paymentMethod: "ZALO" | "VIETQR";
-  setPaymentMethod: (v: "ZALO" | "VIETQR") => void;
+  paymentMethod: "COD" | "VIETQR";
+  setPaymentMethod: (v: "COD" | "VIETQR") => void;
   formError: string;
   inZaloApp: boolean;
   distanceKm: number | null;
@@ -425,27 +425,27 @@ export function CartDeliveryForm({
         </label>
 
         <div className="grid grid-cols-2 gap-2">
-          {/* Lựa chọn 1: Chốt đơn qua Zalo */}
+          {/* Lựa chọn 1: Tiền mặt khi nhận hàng (COD) */}
           <button
             type="button"
-            onClick={() => setPaymentMethod("ZALO")}
+            onClick={() => setPaymentMethod("COD")}
             className={`p-3 rounded-xl border-2 text-left transition flex flex-col justify-between relative cursor-pointer ${
-              paymentMethod === "ZALO"
-                ? "border-blue-600 bg-blue-50/60 shadow-xs"
+              paymentMethod === "COD"
+                ? "border-emerald-600 bg-emerald-50/60 shadow-xs ring-2 ring-emerald-500/20"
                 : "border-slate-200 bg-slate-50/50 hover:bg-slate-100/50 text-slate-700"
             }`}
           >
             <div className="flex items-center justify-between w-full mb-1">
-              <span className="flex items-center gap-1.5 font-bold text-xs text-blue-900">
-                <MessageCircle className="w-4 h-4 text-blue-600" />
-                <span>Zalo Order</span>
+              <span className="flex items-center gap-1.5 font-bold text-xs text-emerald-900">
+                <span className="text-sm">💵</span>
+                <span>Tiền Mặt (COD)</span>
               </span>
-              {paymentMethod === "ZALO" && (
-                <CheckCircle2 className="w-4 h-4 text-blue-600" />
+              {paymentMethod === "COD" && (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               )}
             </div>
             <p className="text-[10px] text-slate-500 leading-tight">
-              Gửi tin nhắn đơn qua Zalo, nhận chè thanh toán khi nhận hàng (COD).
+              Thanh toán trực tiếp cho shipper khi nhận chè.
             </p>
           </button>
 
@@ -455,21 +455,21 @@ export function CartDeliveryForm({
             onClick={() => setPaymentMethod("VIETQR")}
             className={`p-3 rounded-xl border-2 text-left transition flex flex-col justify-between relative cursor-pointer ${
               paymentMethod === "VIETQR"
-                ? "border-orange-600 bg-orange-50/60 shadow-xs"
+                ? "border-orange-600 bg-orange-50/60 shadow-xs ring-2 ring-orange-500/20"
                 : "border-slate-200 bg-slate-50/50 hover:bg-slate-100/50 text-slate-700"
             }`}
           >
             <div className="flex items-center justify-between w-full mb-1">
               <span className="flex items-center gap-1.5 font-bold text-xs text-orange-950">
                 <QrCode className="w-4 h-4 text-orange-600" />
-                <span>VietQR Chuyển Khoản</span>
+                <span>Quét Mã VietQR</span>
               </span>
               {paymentMethod === "VIETQR" && (
                 <CheckCircle2 className="w-4 h-4 text-orange-600" />
               )}
             </div>
             <p className="text-[10px] text-slate-500 leading-tight">
-              Quét mã ngân hàng, hệ thống tự động xác nhận đơn 24/7.
+              Chuyển khoản QR, hệ thống tự động xác nhận 24/7.
             </p>
           </button>
         </div>

@@ -57,6 +57,7 @@ model Order {
   customerPhone   String
   customerAddress String
   note            String?
+  ipAddress       String?
   paymentMethod   String      @default("COD") // COD, VIETQR, ZALO
   paymentStatus   String      @default("UNPAID") // UNPAID, PAID
   orderStatus     String      @default("PENDING") // PENDING, CONFIRMED, PREPARING, DELIVERING, COMPLETED, CANCELLED
@@ -70,6 +71,17 @@ model Order {
 
   @@index([customerPhone])
   @@index([orderStatus, createdAt])
+}
+
+model Blacklist {
+  id        String   @id @default(cuid())
+  phone     String?  @unique
+  ipAddress String?
+  reason    String?  @default("Bom hàng / Đơn ảo")
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+  @@index([ipAddress])
 }
 
 model OrderItem {

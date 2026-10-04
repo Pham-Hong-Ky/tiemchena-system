@@ -11,6 +11,7 @@ interface CartDrawerItemProps {
   index: number;
   isExpanded: boolean;
   availableOptions: ToppingType[];
+  isOutOfStock?: boolean;
   onToggleExpand: () => void;
   onUpdateQuantity: (quantity: number) => void;
   onRemove: () => void;
@@ -22,6 +23,7 @@ export function CartDrawerItem({
   item,
   isExpanded,
   availableOptions,
+  isOutOfStock = false,
   onToggleExpand,
   onUpdateQuantity,
   onRemove,
@@ -33,18 +35,32 @@ export function CartDrawerItem({
   const lineTotal = itemUnitTotal * item.quantity;
 
   return (
-    <div className="py-3 px-2 flex flex-col gap-2">
+    <div className={`py-3 px-2 flex flex-col gap-2 rounded-xl transition ${isOutOfStock ? "bg-red-50/70 border border-red-200" : ""}`}>
       <div className="flex items-start gap-3">
-        <img
-          src={getOptimizedImageUrl(item.image, { width: 160, crop: "fill" })}
-          alt={item.name}
-          loading="lazy"
-          decoding="async"
-          className="w-14 h-14 rounded-xl object-cover shrink-0 border border-slate-200"
-        />
+        <div className="relative shrink-0">
+          <img
+            src={getOptimizedImageUrl(item.image, { width: 160, crop: "fill" })}
+            alt={item.name}
+            loading="lazy"
+            decoding="async"
+            className="w-14 h-14 rounded-xl object-cover border border-slate-200"
+          />
+          {isOutOfStock && (
+            <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center">
+              <span className="text-[9px] font-black text-white bg-red-600 px-1 py-0.5 rounded">Hết</span>
+            </div>
+          )}
+        </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-1">
-            <h4 className="font-bold text-sm text-slate-900 truncate">{item.name}</h4>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <h4 className="font-bold text-sm text-slate-900 truncate">{item.name}</h4>
+              {isOutOfStock && (
+                <span className="text-[10px] font-black bg-red-600 text-white px-1.5 py-0.2 rounded shrink-0">
+                  Hết hàng
+                </span>
+              )}
+            </div>
             <button
               onClick={onRemove}
               className="text-slate-400 hover:text-red-500 transition p-1 cursor-pointer shrink-0"

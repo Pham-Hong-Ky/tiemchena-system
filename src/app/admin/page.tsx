@@ -16,7 +16,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { AdminOrderCard } from "@/components/admin/orders/AdminOrderCard";
 import { OrderFilterBar } from "@/components/admin/orders/OrderFilterBar";
-import { getOrders, patchOrder, deleteOrder, cleanCancelledOrders } from "@/lib/api";
+import { getOrders, patchOrder, deleteOrder, cleanCancelledOrders, blacklistOrder } from "@/lib/api";
 import { OrderType } from "@/types";
 import { toast } from "@/context/ToastContext";
 import { playOrderNotificationSound } from "@/lib/notificationSound";
@@ -31,15 +31,9 @@ const STATUS_CARDS = [
     activeStyle: "bg-amber-500 text-white border-amber-600",
   },
   {
-    status: "PREPARING",
-    label: "Bếp Đang Làm",
+    status: "CONFIRMED",
+    label: "Đã Nhận Đơn",
     icon: ChefHat,
-    activeStyle: "bg-orange-600 text-white border-orange-700",
-  },
-  {
-    status: "DELIVERING",
-    label: "Đang Giao Hàng",
-    icon: Bike,
     activeStyle: "bg-blue-600 text-white border-blue-700",
   },
   {
@@ -68,12 +62,33 @@ export default function AdminKdsPage() {
   // Modals confirmation state
   const [orderToDelete, setOrderToDelete] = useState<OrderType | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<OrderType | null>(null);
+  const [orderToBlacklist, setOrderToBlacklist] = useState<OrderType | null>(null);
   const [isCleanModalOpen, setIsCleanModalOpen] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
-  const fetchOrdersList = async () => {
+  // Lưu danh sách order IDs đã biết để phát chuông chính xác khi có đơn mới
+  const knownOrderIdsRef = React.useRef<Set<string>>(new Set());
+  const isInitialLoadRef = React.useRef(true);
+
+  const fetchOrdersList = async (isPoll = false) => {
     try {
       const data = await getOrders();
+
+      if (!isInitialLoadRef.current && isPoll) {
+        // Tìm các đơn mới chưa từng thấy
+        const newOrders = data.filter(
+          (o) => !knownOrderIdsRef.current.has(o.id) && o.orderStatus === "PENDING"
+        );
+        if (newOrders.length > 0) {
+          playOrderNotificationSound();
+          const first = newOrders[0];
+          setNewOrderAlert(`Đơn mới: ${first.orderCode} - ${first.customerName}`);
+          setTimeout(() => setNewOrderAlert(null), 6000);
+        }
+      }
+
+      data.forEach((o) => knownOrderIdsRef.current.add(o.id));
+      isInitialLoadRef.current = false;
       setOrders(data);
     } catch (e) {
       console.error("Failed to fetch orders", e);
@@ -83,7 +98,7 @@ export default function AdminKdsPage() {
   };
 
   useEffect(() => {
-    fetchOrdersList();
+    fetchOrdersList(false);
 
     let eventSource: EventSource | null = null;
     try {
@@ -91,12 +106,17 @@ export default function AdminKdsPage() {
       eventSource.onmessage = (event) => {
         try {
           const payload = JSON.parse(event.data);
-          if (payload.type === "NEW_ORDER") {
+          if (payload.type === "NEW_ORDER" && payload.data) {
+            const isNew = !knownOrderIdsRef.current.has(payload.data.id);
+            knownOrderIdsRef.current.add(payload.data.id);
             setOrders((prev) => [payload.data, ...prev.filter((o) => o.id !== payload.data.id)]);
-            playOrderNotificationSound();
-            setNewOrderAlert(`Đơn mới: ${payload.data.orderCode} - ${payload.data.customerName}`);
-            setTimeout(() => setNewOrderAlert(null), 5000);
-          } else if (payload.type === "ORDER_UPDATED") {
+            
+            if (isNew) {
+              playOrderNotificationSound();
+              setNewOrderAlert(`Đơn mới: ${payload.data.orderCode} - ${payload.data.customerName}`);
+              setTimeout(() => setNewOrderAlert(null), 6000);
+            }
+          } else if (payload.type === "ORDER_UPDATED" && payload.data) {
             setOrders((prev) => prev.map((o) => (o.id === payload.data.id ? payload.data : o)));
           }
         } catch {}
@@ -105,9 +125,10 @@ export default function AdminKdsPage() {
       console.warn("SSE init warning", e);
     }
 
+    // Polling nhanh mỗi 5s để đảm bảo 100% không bao giờ bị miss chuông
     const fallbackPollInterval = setInterval(() => {
-      fetchOrdersList();
-    }, 30000);
+      fetchOrdersList(true);
+    }, 5000);
 
     return () => {
       if (eventSource) eventSource.close();
@@ -125,6 +146,24 @@ export default function AdminKdsPage() {
       toast.success("Cập nhật đơn hàng thành công");
     } catch {
       toast.error("Không thể cập nhật đơn hàng");
+    }
+  };
+
+  const handleConfirmBlacklistOrder = async () => {
+    if (!orderToBlacklist) return;
+    setIsActionLoading(true);
+    try {
+      const res = await blacklistOrder(orderToBlacklist.id, "Bom hàng / Đơn ảo");
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderToBlacklist.id ? res.data : o))
+      );
+      toast.success(`Đã chặn SĐT ${orderToBlacklist.customerPhone} vào danh sách đen và hủy đơn!`);
+      setOrderToBlacklist(null);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || "Không thể chặn số điện thoại này");
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
@@ -181,6 +220,8 @@ export default function AdminKdsPage() {
       matchStatus = o.orderStatus !== "CANCELLED";
     } else if (filterStatus === "ALL") {
       matchStatus = !hideCancelled || o.orderStatus !== "CANCELLED";
+    } else if (filterStatus === "CONFIRMED") {
+      matchStatus = o.orderStatus === "CONFIRMED" || o.orderStatus === "PREPARING" || o.orderStatus === "DELIVERING";
     } else {
       matchStatus = o.orderStatus === filterStatus;
     }
@@ -196,16 +237,20 @@ export default function AdminKdsPage() {
   const totalPages = Math.ceil(filteredOrders.length / pageSize) || 1;
   const paginatedOrders = filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  const countByStatus = (s: string) => orders.filter((o) => o.orderStatus === s).length;
+  const countByStatus = (s: string) => {
+    if (s === "CONFIRMED") {
+      return orders.filter((o) => o.orderStatus === "CONFIRMED" || o.orderStatus === "PREPARING" || o.orderStatus === "DELIVERING").length;
+    }
+    return orders.filter((o) => o.orderStatus === s).length;
+  };
   const activeOrdersCount = orders.filter((o) => o.orderStatus !== "CANCELLED").length;
   const cancelledOrdersCount = countByStatus("CANCELLED");
 
   const filterTabs = [
     { id: "ACTIVE", label: "Đang Hoạt Động", count: activeOrdersCount },
     { id: "PENDING", label: "Chờ Duyệt", count: countByStatus("PENDING") },
-    { id: "PREPARING", label: "Bếp Đang Làm", count: countByStatus("PREPARING") },
-    { id: "DELIVERING", label: "Đang Giao", count: countByStatus("DELIVERING") },
-    { id: "COMPLETED", label: "Hoàn Thành", count: countByStatus("COMPLETED") },
+    { id: "CONFIRMED", label: "Đã Nhận Đơn", count: countByStatus("CONFIRMED") },
+    { id: "COMPLETED", label: "Đã Hoàn Thành", count: countByStatus("COMPLETED") },
     { id: "CANCELLED", label: "Đã Hủy (Đơn Rác)", count: cancelledOrdersCount },
     { id: "ALL", label: "Toàn Bộ", count: orders.length },
   ];
@@ -231,7 +276,7 @@ export default function AdminKdsPage() {
       )}
 
       {/* Metric cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {STATUS_CARDS.map(({ status, label, icon, activeStyle }) => (
           <StatusCard
             key={status}
@@ -278,6 +323,7 @@ export default function AdminKdsPage() {
               onPrintBill={() => setSelectedBillOrder(order)}
               onQuickDelete={() => setOrderToDelete(order)}
               onCancelOrder={() => setOrderToCancel(order)}
+              onBlacklistOrder={() => setOrderToBlacklist(order)}
               onPatchOrder={(patch) => handlePatchOrder(order.id, patch)}
             />
           ))}
@@ -302,6 +348,20 @@ export default function AdminKdsPage() {
         <PrintBillModal
           order={selectedBillOrder}
           onClose={() => setSelectedBillOrder(null)}
+        />
+      )}
+
+      {orderToBlacklist && (
+        <ConfirmModal
+          isOpen={true}
+          title={`🚫 Chặn SĐT & IP: ${orderToBlacklist.customerPhone}`}
+          message={`Bạn có chắc chắn muốn đưa số điện thoại "${orderToBlacklist.customerPhone}" (${orderToBlacklist.customerName}) và địa chỉ thiết bị này vào DANH SÁCH ĐEN? Người này sẽ bị chặn vĩnh viễn không thể đặt hàng trên hệ thống nữa. Đơn hàng này cũng sẽ tự động bị hủy.`}
+          confirmText="Xác nhận Chặn & Hủy đơn"
+          cancelText="Bỏ qua"
+          isDanger={true}
+          isLoading={isActionLoading}
+          onConfirm={handleConfirmBlacklistOrder}
+          onClose={() => setOrderToBlacklist(null)}
         />
       )}
 

@@ -22,6 +22,8 @@ import { OrderType } from "@/types";
 import { useTheme } from "@/context/ThemeContext";
 import { ButtonFestiveDecorator } from "@/components/theme/ButtonFestiveDecorator";
 import { SHOP_ENV } from "@/config/shopEnv";
+import { openZaloShopChat } from "@/lib/zaloMiniApp";
+import { toast } from "@/context/ToastContext";
 
 interface OrderTrackingModalProps {
   initialPhone?: string;
@@ -78,23 +80,19 @@ export function OrderTrackingModal({
   }, [initialQuery]);
 
   const steps = [
-    { key: "PENDING", label: "Tiếp Nhận", desc: "Quán đã nhận đơn", icon: Clock },
-    { key: "PREPARING", label: "Đang Làm", desc: "Bếp đang chế biến", icon: ChefHat },
-    { key: "DELIVERING", label: "Đang Giao", desc: "Shipper đang mang tới", icon: Bike },
-    { key: "COMPLETED", label: "Hoàn Thành", desc: "Giao món thành công", icon: CheckCircle2 },
+    { key: "PENDING", label: "Chờ Duyệt", desc: "Quán đã tiếp nhận đơn", icon: Clock },
+    { key: "CONFIRMED", label: "Đã Nhận Đơn", desc: "Quán đang chuẩn bị món", icon: ChefHat },
+    { key: "COMPLETED", label: "Đã Hoàn Thành", desc: "Giao món thành công", icon: CheckCircle2 },
   ];
 
   const getStepIndex = (status: string) => {
     switch (status) {
-      case "PENDING":
-      case "CONFIRMED":
-        return 0;
-      case "PREPARING":
-        return 1;
-      case "DELIVERING":
-        return 2;
       case "COMPLETED":
-        return 3;
+        return 2;
+      case "CONFIRMED":
+      case "PREPARING":
+      case "DELIVERING":
+        return 1;
       default:
         return 0;
     }
@@ -102,20 +100,16 @@ export function OrderTrackingModal({
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "PENDING":
-        return <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">Tiếp Nhận</span>;
-      case "CONFIRMED":
-        return <span className="bg-sky-100 text-sky-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">Đã Xác Nhận</span>;
-      case "PREPARING":
-        return <span className="bg-blue-100 text-blue-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">Đang Làm</span>;
-      case "DELIVERING":
-        return <span className="bg-purple-100 text-purple-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">Đang Giao</span>;
       case "COMPLETED":
-        return <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">Hoàn Thành</span>;
+        return <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">Đã Hoàn Thành</span>;
+      case "CONFIRMED":
+      case "PREPARING":
+      case "DELIVERING":
+        return <span className="bg-blue-100 text-blue-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">Đã Nhận Đơn</span>;
       case "CANCELLED":
-        return <span className="bg-rose-100 text-rose-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">Đã Hủy</span>;
+        return <span className="bg-rose-100 text-rose-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">Đã Hủy</span>;
       default:
-        return null;
+        return <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">Chờ Duyệt</span>;
     }
   };
 
@@ -316,12 +310,20 @@ export function OrderTrackingModal({
                 </div>
               ) : (
                 <div className="py-2 px-1">
-                  <div className="grid grid-cols-4 relative">
-                    {/* Connecting line */}
+                  <div className="grid grid-cols-3 relative max-w-md mx-auto">
+                    {/* Connecting line background */}
                     <div className="absolute top-5 left-8 right-8 h-0.5 bg-slate-200 z-0" />
+                    {/* Active connecting line */}
                     <div
-                      className="absolute top-5 left-8 h-0.5 bg-gradient-to-r from-orange-500 to-amber-500 transition-all duration-500 z-0"
-                      style={{ width: `${(currentStep / 3) * 75}%` }}
+                      className="absolute top-5 left-8 h-0.5 bg-gradient-to-r from-orange-500 to-emerald-500 transition-all duration-500 z-0"
+                      style={{
+                        width:
+                          currentStep === 2
+                            ? "calc(100% - 4rem)"
+                            : currentStep === 1
+                            ? "calc(50% - 2rem)"
+                            : "0%",
+                      }}
                     />
 
                     {steps.map((step, idx) => {
@@ -330,7 +332,7 @@ export function OrderTrackingModal({
                       const isCurrent = idx === currentStep;
 
                       return (
-                        <div key={step.key} className="flex flex-col items-center text-center relative z-10">
+                        <div key={step.key} className="flex flex-col items-center text-center relative z-10 px-1">
                           <div
                             className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
                               isDone
@@ -425,16 +427,17 @@ export function OrderTrackingModal({
                   >
                     <PhoneCall className="w-3.5 h-3.5" /> Gọi {SHOP_ENV.hotline}
                   </a>
-                  <a
-                    href={`https://zalo.me/${SHOP_ENV.zaloPhone}?text=${encodeURIComponent(
-                      `Chào quán, mình muốn kiểm tra đơn hàng số điện thoại ${selectedOrder.customerPhone} (Mã: ${selectedOrder.orderCode})`
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3 py-1.5 rounded-xl shadow-xs transition"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const msg = `Chào quán, mình muốn kiểm tra đơn hàng số điện thoại ${selectedOrder.customerPhone} (Mã: ${selectedOrder.orderCode})`;
+                      openZaloShopChat(SHOP_ENV.zaloPhone, msg);
+                      toast.info("Đã sao chép tin nhắn! Bạn chỉ cần dán (Paste) vào Zalo là xong.");
+                    }}
+                    className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3 py-1.5 rounded-xl shadow-xs transition cursor-pointer"
                   >
                     <MessageSquare className="w-3.5 h-3.5" /> Chat Zalo
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>

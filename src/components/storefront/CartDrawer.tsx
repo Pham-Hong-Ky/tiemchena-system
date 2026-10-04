@@ -20,6 +20,7 @@ import {
   validatePhoneNumber,
   validateCustomerName,
   validateCustomerAddress,
+  validateOpeningHours,
 } from "@/lib/orderValidation";
 import { isRunningInZalo, openZaloShopChat } from "@/lib/zaloMiniApp";
 import { resolveProductOptions, buildZaloOrderMessage } from "@/lib/cartHelpers";
@@ -61,7 +62,7 @@ export function CartDrawer({
   const [customerAddress, setCustomerAddress] = useState("");
   const [note, setNote] = useState("");
   const [websiteHp, setWebsiteHp] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"ZALO" | "VIETQR">("ZALO");
+  const [paymentMethod, setPaymentMethod] = useState<"COD" | "VIETQR">("COD");
 
   // Geocode, Distance & Shipping Fee State
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
@@ -92,9 +93,35 @@ export function CartDrawer({
   // Tính tổng tiền bao gồm phí ship
   const totalWithShipping = subtotal + shippingFee;
 
+  // Kiểm tra các món trong giỏ hàng có món nào bị hết hàng không
+  const outOfStockCartItems = useMemo(() => {
+    return cart.filter((item) => {
+      const p = products.find((prod) => prod.id === item.id);
+      return p && p.isAvailable === false;
+    });
+  }, [cart, products]);
+
+  // Kiểm tra giờ mở cửa của quán (09:00 - 22:00)
+  const storeHours = validateOpeningHours();
+
   // Validate form
   const validateForm = (): boolean => {
     setFormError("");
+
+    if (!storeHours.isOpen) {
+      const msg = storeHours.error || "Quán chỉ nhận đơn đặt hàng từ 09:00 đến 22:00 hàng ngày.";
+      setFormError(msg);
+      toast.error(msg);
+      return false;
+    }
+
+    if (outOfStockCartItems.length > 0) {
+      const names = outOfStockCartItems.map((i) => i.name).join(", ");
+      const msg = `Món "${names}" hiện đã hết hàng. Quý khách vui lòng xóa món khỏi giỏ để tiếp tục!`;
+      setFormError(msg);
+      toast.error(msg);
+      return false;
+    }
 
     if (isOutOfRange) {
       const msg = rangeError || "Địa chỉ nhận hàng cách quán quá xa (> 15 km), quán chưa thể nhận đơn này.";
@@ -137,7 +164,7 @@ export function CartDrawer({
     return true;
   };
 
-  // Xử lý chốt đơn (Zalo hoặc SePay VietQR Tự Động)
+  // Xử lý chốt đơn (COD Tiền Mặt hoặc SePay VietQR Tự Động)
   const handleProceedOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -165,8 +192,8 @@ export function CartDrawer({
         clearCart();
         setIsCartOpen(false);
         setShowQrPaymentModal(true);
-      } catch (err) {
-        const msg = err instanceof ApiError ? err.message : "Lỗi tạo đơn hàng VietQR, vui lòng thử lại";
+      } catch (err: any) {
+        const msg = err instanceof ApiError ? err.message : err.message || "Lỗi tạo đơn hàng VietQR, vui lòng thử lại";
         setFormError(msg);
         toast.error(msg);
       } finally {
@@ -175,14 +202,14 @@ export function CartDrawer({
       return;
     }
 
-    // LUỒNG 2: CHỐT ĐƠN QUA ZALO ORDER
+    // LUỒNG 2: CHỐT ĐƠN TIỀN MẶT TRỰC TIẾP (COD)
     try {
       const order = await createOrder({
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
         customerAddress: customerAddress.trim(),
         note: note.trim(),
-        paymentMethod: "ZALO",
+        paymentMethod: "COD",
         items: cart,
         website_hp: websiteHp,
         shippingFee,
@@ -190,30 +217,12 @@ export function CartDrawer({
         distanceSource,
       });
 
-      const message = buildZaloOrderMessage({
-        orderCode: order.orderCode,
-        customerName,
-        customerPhone,
-        customerAddress,
-        cart,
-        finalTotal: totalWithShipping,
-        shippingFee,
-        distanceKm,
-        note,
-      });
-
-      if (typeof navigator !== "undefined" && navigator.clipboard) {
-        navigator.clipboard.writeText(message).catch(() => {});
-        toast.info("Đã sao chép đơn! Bạn chỉ cần dán (Paste) vào Zalo là xong.");
-      }
-
-      openZaloShopChat(zaloPhone, message);
-
       clearCart();
       setIsCartOpen(false);
       onOrderSuccess(order);
-    } catch (err) {
-      const msg = err instanceof ApiError ? err.message : "Lỗi tạo đơn hàng qua Zalo, vui lòng thử lại";
+      toast.success("Đặt hàng thành công! Quán đã tiếp nhận đơn của bạn.");
+    } catch (err: any) {
+      const msg = err instanceof ApiError ? err.message : err.message || "Lỗi tạo đơn hàng, vui lòng thử lại";
       setFormError(msg);
       toast.error(msg);
     } finally {
@@ -333,6 +342,27 @@ export function CartDrawer({
                   )}
                 </div>
 
+                {!storeHours.isOpen && (
+                  <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-xs space-y-1">
+                    <div className="flex items-center gap-2 font-black text-amber-800">
+                      <span>⏰</span>
+                      <span>QUÁN ĐANG ĐÓNG CỬA (Mở: 09:00 - 22:00)</span>
+                    </div>
+                    <p className="text-[11px] text-amber-700 leading-relaxed">
+                      Giờ Việt Nam hiện tại: <strong>{storeHours.currentVnTime}</strong>. Quý khách vui lòng quay lại đặt hàng trong khung giờ mở cửa (09:00 - 22:00) nhé!
+                    </p>
+                  </div>
+                )}
+
+                {outOfStockCartItems.length > 0 && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-bold flex items-start gap-2">
+                    <span className="text-base leading-none">⚠️</span>
+                    <span>
+                      Có món trong giỏ hàng hiện đã <strong>hết hàng</strong>. Vui lòng xóa món đó để tiếp tục đặt hàng!
+                    </span>
+                  </div>
+                )}
+
                 <div className="divide-y divide-slate-100 bg-slate-50/60 rounded-2xl p-2 border border-slate-100">
                   {cart.map((item, idx) => (
                     <CartDrawerItem
@@ -340,6 +370,7 @@ export function CartDrawer({
                       item={item}
                       index={idx}
                       isExpanded={expandedItemIdx === idx}
+                      isOutOfStock={products.find((p) => p.id === item.id)?.isAvailable === false}
                       availableOptions={resolveProductOptions(
                         products.find((p) => p.id === item.id),
                         toppingsList,
@@ -427,12 +458,14 @@ export function CartDrawer({
 
                 <button
                   type="submit"
-                  disabled={isSubmitting || isOutOfRange}
+                  disabled={isSubmitting || isOutOfRange || !storeHours.isOpen}
                   className={`w-full ${
-                    isOutOfRange
+                    !storeHours.isOpen
                       ? "bg-slate-300 text-slate-500 cursor-not-allowed"
-                      : paymentMethod === "ZALO"
-                      ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/25 text-white"
+                      : isOutOfRange
+                      ? "bg-slate-300 text-slate-500 cursor-not-allowed"
+                      : paymentMethod === "COD"
+                      ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/25 text-white"
                       : "bg-orange-600 hover:bg-orange-700 shadow-orange-600/25 text-white"
                   } font-extrabold py-3.5 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 text-sm transition cursor-pointer disabled:opacity-60 active:scale-[0.99]`}
                 >
@@ -441,11 +474,13 @@ export function CartDrawer({
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span>Đang xử lý đơn...</span>
                     </>
+                  ) : !storeHours.isOpen ? (
+                    <span>QUÁN ĐANG ĐÓNG CỬA (MỞ: 09:00 - 22:00)</span>
                   ) : isOutOfRange ? (
                     <span>ĐỊA CHỈ QUÁ XA (&gt; 15KM) - KHÔNG THỂ ĐẶT</span>
-                  ) : paymentMethod === "ZALO" ? (
+                  ) : paymentMethod === "COD" ? (
                     <>
-                      <span>CHỐT ĐƠN QUA ZALO</span>
+                      <span>ĐẶT HÀNG (TIỀN MẶT KHI NHẬN)</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   ) : (

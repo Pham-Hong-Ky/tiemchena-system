@@ -57,6 +57,16 @@ export async function cleanCancelledOrders(): Promise<{ success: boolean; count:
   });
 }
 
+export async function blacklistOrder(
+  id: string,
+  reason?: string
+): Promise<{ success: boolean; message: string; data: OrderType }> {
+  return apiFetch<{ success: boolean; message: string; data: OrderType }>(`/api/orders/${id}/blacklist`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
 export type CreateOrderPayload = {
   customerName: string;
   customerPhone: string;
