@@ -99,6 +99,7 @@ export const productService = {
         categoryId: validCategoryId,
         toppingsJson: toppingsCheck.jsonString,
       },
+      include: { category: true },
     });
 
     memoryCache.invalidatePrefix("products:");
@@ -162,6 +163,7 @@ export const productService = {
         ...(validCategoryId && { categoryId: validCategoryId }),
         ...(validatedToppingsJsonStr !== undefined && { toppingsJson: validatedToppingsJsonStr }),
       },
+      include: { category: true },
     });
 
     memoryCache.invalidatePrefix("products:");
