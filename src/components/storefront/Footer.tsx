@@ -115,7 +115,15 @@ export function Footer() {
             <ul className="space-y-2.5 text-xs text-slate-300">
               <li className="flex items-start gap-2">
                 <MapPin className={`w-4 h-4 ${style.accentText} shrink-0 mt-0.5`} />
-                <span>Vũ Lăng, Ngũ Hiệp, Thanh Trì, Hà Nội (Gần chợ Ngũ Hiệp & Tecco)</span>
+                <a
+                  href={process.env.NEXT_PUBLIC_MAPS_URL || "https://www.google.com/maps/place/Ti%E1%BB%87m+Ch%C3%A8+Na/@20.9246936,105.8525684,17z/data=!3m1!4b1!4m6!3m5!1s0x3135ad006a26953d:0xf5c35b92ea669558!8m2!3d20.9246936!4d105.8551433!16s%2Fg%2F11w8t_kmh9"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline hover:text-white transition"
+                  title="Mở chỉ đường trên Google Maps"
+                >
+                  Vũ Lăng, Ngũ Hiệp, Thanh Trì, Hà Nội (Gần chợ Ngũ Hiệp & Tecco)
+                </a>
               </li>
               <li className="flex items-center gap-2">
                 <Phone className={`w-4 h-4 ${style.accentText} shrink-0`} />

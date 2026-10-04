@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Phone,
   User,
@@ -11,7 +11,23 @@ import {
   MessageCircle,
   Navigation,
   Loader2,
+  CheckCircle2,
+  Compass,
+  ExternalLink,
 } from "lucide-react";
+import {
+  SHOP_COORDINATES,
+  calculateRoadDistanceKm,
+  calculateShippingFeeByKm,
+} from "@/data/hanoiLocations";
+import { findNearestHanoiWard } from "@/services/geocodeService";
+import dynamic from "next/dynamic";
+
+// Dynamic import Modal Bản đồ để tránh lỗi SSR Leaflet
+const DeliveryMapModal = dynamic(
+  () => import("./DeliveryMapModal").then((mod) => mod.DeliveryMapModal),
+  { ssr: false }
+);
 
 interface CartDeliveryFormProps {
   customerName: string;
@@ -29,13 +45,15 @@ interface CartDeliveryFormProps {
   formError: string;
   inZaloApp: boolean;
   distanceKm: number | null;
+  setDistanceKm: (km: number | null) => void;
   shippingFee: number;
-  isLocating: boolean;
-  isCheckingAddress: boolean;
+  setShippingFee: (fee: number) => void;
   isOutOfRange: boolean;
+  setIsOutOfRange: (v: boolean) => void;
   rangeError: string;
-  onGetGpsLocation: () => void;
-  onCheckAddressDistance: () => void;
+  setRangeError: (msg: string) => void;
+  distanceSource?: "ward" | "pin" | "gps";
+  setDistanceSource?: (s: "ward" | "pin" | "gps") => void;
 }
 
 export function CartDeliveryForm({
@@ -54,14 +72,151 @@ export function CartDeliveryForm({
   formError,
   inZaloApp,
   distanceKm,
+  setDistanceKm,
   shippingFee,
-  isLocating,
-  isCheckingAddress,
+  setShippingFee,
   isOutOfRange,
+  setIsOutOfRange,
   rangeError,
-  onGetGpsLocation,
-  onCheckAddressDistance,
+  setRangeError,
+  distanceSource = "pin",
+  setDistanceSource,
 }: CartDeliveryFormProps) {
+  // Địa chỉ chi tiết (số nhà, ngõ ngách, tên tòa nhà nếu có)
+  const [streetDetail, setStreetDetail] = useState<string>("");
+
+  // Vị trí định vị (từ Ghim bản đồ hoặc GPS)
+  const [locationName, setLocationName] = useState<string>(
+    "Khu vực Vũ Lăng, Xã Thanh Trì (Gần quán)"
+  );
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number }>({
+    lat: SHOP_COORDINATES.lat + 0.003,
+    lng: SHOP_COORDINATES.lng + 0.003,
+  });
+
+  const [isLocatingGps, setIsLocatingGps] = useState<boolean>(false);
+  const [isMapModalOpen, setIsMapModalOpen] = useState<boolean>(false);
+
+  // Đồng bộ chuỗi địa chỉ giao hàng
+  const syncFullAddress = React.useCallback(
+    (street: string, locName: string) => {
+      const parts = [street.trim(), locName.trim()].filter(Boolean);
+      const full = parts.join(", ") || "Hà Nội";
+      setCustomerAddress(full);
+    },
+    [setCustomerAddress]
+  );
+
+  // Khởi tạo tính khoảng cách mặc định lần đầu
+  const hasInitializedRef = useRef(false);
+  useEffect(() => {
+    if (!hasInitializedRef.current && distanceKm === null) {
+      hasInitializedRef.current = true;
+      const km = calculateRoadDistanceKm(userCoords.lat, userCoords.lng);
+      const feeInfo = calculateShippingFeeByKm(km);
+      setDistanceKm(km);
+      setShippingFee(feeInfo.shippingFee);
+      setIsOutOfRange(!feeInfo.isWithinRange);
+      if (setDistanceSource) setDistanceSource("pin");
+      syncFullAddress(streetDetail, locationName);
+    }
+  }, [
+    distanceKm,
+    locationName,
+    setDistanceKm,
+    setDistanceSource,
+    setIsOutOfRange,
+    setShippingFee,
+    streetDetail,
+    syncFullAddress,
+    userCoords.lat,
+    userCoords.lng,
+  ]);
+
+  // Thay đổi số nhà / ngõ / chi tiết
+  const handleStreetDetailChange = (val: string) => {
+    setStreetDetail(val);
+    syncFullAddress(val, locationName);
+  };
+
+  // Lấy vị trí GPS của điện thoại / máy tính
+  const handleGetGps = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      alert("Thiết bị của bạn không hỗ trợ định vị GPS.");
+      return;
+    }
+
+    setIsLocatingGps(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setUserCoords({ lat: latitude, lng: longitude });
+
+        const km = calculateRoadDistanceKm(latitude, longitude);
+        const feeInfo = calculateShippingFeeByKm(km);
+
+        setDistanceKm(km);
+        setShippingFee(feeInfo.shippingFee);
+        setIsOutOfRange(!feeInfo.isWithinRange);
+        if (setDistanceSource) setDistanceSource("gps");
+
+        const nearest = findNearestHanoiWard(latitude, longitude);
+        const newLocName = nearest
+          ? `${nearest.wardName}, ${nearest.districtName}`
+          : `Tọa độ GPS (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
+
+        setLocationName(newLocName);
+        syncFullAddress(streetDetail, newLocName);
+
+        if (!feeInfo.isWithinRange) {
+          setRangeError(
+            `Vị trí GPS cách quán ${km} km, vượt quá bán kính giao hàng tối đa (15 km).`
+          );
+        } else {
+          setRangeError("");
+        }
+        setIsLocatingGps(false);
+      },
+      () => {
+        setIsLocatingGps(false);
+        alert(
+          "Không thể lấy được vị trí GPS hiện tại. Vui lòng cho phép quyền vị trí trong trình duyệt hoặc bấm 'Ghim Bản Đồ' để chọn vị trí nhé."
+        );
+      },
+      { timeout: 9000, enableHighAccuracy: true }
+    );
+  };
+
+  // Xử lý khi khách chốt Ghim trên bản đồ Leaflet
+  const handleConfirmPinMap = (result: {
+    lat: number;
+    lng: number;
+    distanceKm: number;
+    shippingFee: number;
+    isWithinRange: boolean;
+    locationName?: string;
+  }) => {
+    setUserCoords({ lat: result.lat, lng: result.lng });
+    setDistanceKm(result.distanceKm);
+    setShippingFee(result.shippingFee);
+    setIsOutOfRange(!result.isWithinRange);
+    if (setDistanceSource) setDistanceSource("pin");
+
+    const newLocName =
+      result.locationName ||
+      `Vị trí ghim (${result.lat.toFixed(4)}, ${result.lng.toFixed(4)})`;
+    setLocationName(newLocName);
+    syncFullAddress(streetDetail, newLocName);
+
+    if (!result.isWithinRange) {
+      setRangeError(
+        `Vị trí ghim cách quán ${result.distanceKm} km, vượt quá bán kính giao hàng tối đa (15 km).`
+      );
+    } else {
+      setRangeError("");
+    }
+  };
+
   return (
     <div className="space-y-4 pt-2">
       <div className="flex items-center justify-between">
@@ -87,13 +242,13 @@ export function CartDeliveryForm({
             <span>Họ và Tên Người Nhận</span>
             <span className="text-red-500">*</span>
           </span>
-          <span className="text-[10px] text-slate-400 font-normal">Ví dụ: An, Linh, Nguyễn Văn A...</span>
+          <span className="text-[10px] text-slate-400 font-normal">Ví dụ: Anh Nam, Chị Linh...</span>
         </label>
         <input
           type="text"
           value={customerName}
           onChange={(e) => setCustomerName(e.target.value)}
-          placeholder="Nhập tên..."
+          placeholder="Nhập tên người nhận..."
           className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:font-normal focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
         />
       </div>
@@ -113,161 +268,232 @@ export function CartDeliveryForm({
           maxLength={12}
           value={customerPhone}
           onChange={(e) => setCustomerPhone(e.target.value)}
-          placeholder="Nhập số điện thoại"
+          placeholder="Nhập số điện thoại..."
           className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-800 placeholder:font-sans placeholder:font-normal focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
         />
       </div>
 
-      {/* 3. Địa Chỉ Nhận Hàng Cụ Thể + Nút Lấy Vị Trí GPS */}
-      <div className="space-y-1.5">
+      {/* 3. Vị Trí Giao Hàng: Chỉ Ghim Bản Đồ & GPS */}
+      <div className="space-y-3 p-3.5 bg-slate-50/90 border border-slate-200 rounded-2xl">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-orange-600" />
-            <span>Địa Chỉ Giao Hàng Cụ Thể</span>
+          <label className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+            <MapPin className="w-4 h-4 text-orange-600" />
+            <span>Vị Trí Nhận Hàng</span>
             <span className="text-red-500">*</span>
           </label>
+          <span className="text-[10px] text-slate-400">Chọn trên bản đồ hoặc GPS</span>
+        </div>
+
+        {/* 2 Nút lớn chọn vị trí: Ghim bản đồ & GPS */}
+        <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={onGetGpsLocation}
-            disabled={isLocating}
-            className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 border border-orange-200/80 px-2.5 py-1 rounded-lg transition cursor-pointer active:scale-95 disabled:opacity-50"
-            title="Sử dụng GPS trên điện thoại để lấy vị trí và tính tiền ship tự động"
+            onClick={() => setIsMapModalOpen(true)}
+            className="flex items-center justify-center gap-2 px-3 py-2.5 bg-white hover:bg-orange-50/60 text-slate-800 hover:text-orange-700 border-2 border-slate-200 hover:border-orange-400 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
           >
-            {isLocating ? (
-              <Loader2 className="w-3 h-3 animate-spin text-orange-600" />
+            <Compass className="w-4 h-4 text-orange-600" />
+            <span>Ghim Bản Đồ</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleGetGps}
+            disabled={isLocatingGps}
+            className="flex items-center justify-center gap-2 px-3 py-2.5 bg-white hover:bg-blue-50/60 text-slate-800 hover:text-blue-700 border-2 border-slate-200 hover:border-blue-400 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer active:scale-95 disabled:opacity-50"
+          >
+            {isLocatingGps ? (
+              <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
             ) : (
-              <Navigation className="w-3 h-3 text-orange-600" />
+              <Navigation className="w-4 h-4 text-blue-600" />
             )}
-            <span>{isLocating ? "Đang định vị..." : "📍 Lấy vị trí của tôi"}</span>
+            <span>Vị Trí Hiện Tại (GPS)</span>
           </button>
         </div>
 
-        <div className="relative">
-          <textarea
-            rows={2}
-            value={customerAddress}
-            onChange={(e) => setCustomerAddress(e.target.value)}
-            onBlur={onCheckAddressDistance}
-            placeholder="VD: Số 12 ngõ 45 phố Tây Sơn, phường Quang Trung, Đống Đa, Hà Nội"
-            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 leading-relaxed placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition resize-none"
-          />
-          {customerAddress.trim().length >= 5 && (
+        {/* Thẻ hiển thị vị trí đã chọn, cự ly và phí ship */}
+        <div className="p-3 bg-white border border-slate-200/90 rounded-xl space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-0.5">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Vị trí đã định vị
+              </div>
+              <div className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                <span className="text-orange-600">📍</span>
+                <span>{locationName}</span>
+              </div>
+            </div>
+
             <button
               type="button"
-              onClick={onCheckAddressDistance}
-              disabled={isCheckingAddress}
-              className="absolute right-2 bottom-2.5 px-2 py-0.5 bg-slate-200/80 hover:bg-slate-300 text-slate-700 text-[10px] font-bold rounded-md transition cursor-pointer flex items-center gap-1"
+              onClick={() => setIsMapModalOpen(true)}
+              className="text-[11px] font-bold text-orange-600 hover:text-orange-700 underline shrink-0 cursor-pointer"
             >
-              {isCheckingAddress && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
-              <span>Kiểm tra khoảng cách</span>
+              Chỉnh ghim
             </button>
+          </div>
+
+          {/* Cự ly & Phí ship */}
+          {distanceKm !== null && !isOutOfRange && (
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+                <span>🛵 Khoảng cách:</span>
+                <span className="font-black text-emerald-600">{distanceKm} km</span>
+                <span className="text-[10px] text-slate-400 font-normal">
+                  ({distanceSource === "gps" ? "GPS" : "Bản đồ"})
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-[11px] text-slate-500 font-medium mr-1.5">Phí ship:</span>
+                <span className="font-black text-orange-600 text-sm">
+                  {shippingFee.toLocaleString("vi-VN")}đ
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Cảnh báo vượt quá 15km */}
+          {isOutOfRange && (
+            <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2 text-xs text-red-700">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+              <div className="font-semibold leading-relaxed">
+                {rangeError ||
+                  `Vị trí cách quán ${distanceKm} km, vượt quá bán kính phục vụ (15 km). Quán rất tiếc chưa thể giao đơn này!`}
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Thẻ thông báo khoảng cách & phí ship hoặc cảnh báo quá xa */}
-        {distanceKm !== null && !isOutOfRange && (
-          <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-800 animate-in fade-in duration-200">
-            <div className="flex items-center gap-1.5 font-bold">
-              <span className="text-sm">🚗</span>
-              <span>Khoảng cách: {distanceKm} km</span>
-            </div>
-            <div className="font-extrabold text-emerald-700 bg-white px-2 py-0.5 rounded-lg border border-emerald-200 text-[11px]">
-              Phí ship: {shippingFee.toLocaleString("vi-VN")}đ
-            </div>
-          </div>
-        )}
+        {/* 4. Địa Chỉ Chi Tiết (Số nhà, ngõ, tòa nhà - Nếu có) */}
+        <div className="space-y-1 pt-1">
+          <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between">
+            <span>Địa chỉ chi tiết (nếu có)</span>
+          </label>
+          <textarea
+            rows={2}
+            value={streetDetail}
+            onChange={(e) => handleStreetDetailChange(e.target.value)}
+            placeholder="Số nhà, ngõ/ngách, tên tòa nhà, số phòng chung cư (nếu có)..."
+            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 transition resize-none"
+          />
+        </div>
 
-        {isOutOfRange && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 text-xs text-red-700 animate-in fade-in duration-200">
-            <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-            <div className="font-semibold leading-relaxed">
-              {rangeError || `Vị trí cách quán ${distanceKm} km, vượt quá bán kính giao hàng tối đa (15 km). Quán rất tiếc chưa thể phục vụ đơn này!`}
-            </div>
+        {/* 5. Chú thích: Sai địa chỉ thì liên hệ Zalo */}
+        <div className="p-3 bg-blue-50/90 border border-blue-200/90 rounded-xl flex items-start gap-2.5 text-xs text-blue-900">
+          <MessageCircle className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+          <div className="space-y-1.5 w-full">
+            <p className="font-bold text-blue-950 leading-snug">
+              Sai địa chỉ hoặc định vị chưa chuẩn?
+            </p>
+            <p className="text-[11px] text-blue-800 leading-relaxed">
+              Nếu bản đồ định vị chưa chính xác hoặc bạn muốn giao tới địa chỉ đặc biệt, hãy nhắn tin trực tiếp để quán hỗ trợ giao tận tay nhé:
+            </p>
+            <a
+              href="https://zalo.me/0986479285"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-extrabold shadow-xs transition active:scale-95 cursor-pointer mt-1"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span>Nhắn Zalo Quán (0986.479.285)</span>
+              <ExternalLink className="w-3 h-3 opacity-80" />
+            </a>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* 4. Ghi Chú Đơn Hàng Chung */}
+      {/* 6. Ghi Chú Đơn Hàng */}
       <div className="space-y-1.5">
-        <label className="text-xs font-bold text-slate-700">Ghi chú cho quán (Tùy chọn)</label>
-        <input
-          type="text"
+        <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+          <span>Ghi Chú Đơn Hàng</span>
+          <span className="text-[10px] text-slate-400 font-normal">Không bắt buộc</span>
+        </label>
+        <textarea
+          rows={2}
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Giao giờ trưa, gọi trước khi đến 5 phút..."
-          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+          placeholder="Nhập ghi chú..."
+          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition resize-none"
         />
       </div>
 
-      {/* Honeypot field - Ẩn hoàn toàn với người dùng để chống spam bot */}
-      <div className="hidden" aria-hidden="true">
-        <input
-          type="text"
-          name="website_hp"
-          tabIndex={-1}
-          autoComplete="off"
-          value={websiteHp}
-          onChange={(e) => setWebsiteHp(e.target.value)}
-        />
-      </div>
-
-      {/* 5. Chọn Phương Thức Thanh Toán & Chốt Đơn */}
+      {/* 7. Hình Thức Thanh Toán */}
       <div className="space-y-2 pt-1">
-        <label className="text-xs font-bold text-slate-700 block">
-          Phương thức đặt hàng & thanh toán:
+        <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+          <span>Hình Thức Thanh Toán</span>
+          <span className="text-[10px] text-emerald-600 font-bold">Linh hoạt & Tiện lợi</span>
         </label>
+
         <div className="grid grid-cols-2 gap-2">
-          {/* Nút 1: Zalo Order */}
+          {/* Lựa chọn 1: Chốt đơn qua Zalo */}
           <button
             type="button"
             onClick={() => setPaymentMethod("ZALO")}
-            className={`p-3 rounded-xl border text-left transition flex flex-col justify-between cursor-pointer ${
+            className={`p-3 rounded-xl border-2 text-left transition flex flex-col justify-between relative cursor-pointer ${
               paymentMethod === "ZALO"
-                ? "bg-blue-50/90 border-blue-500 text-blue-900 ring-2 ring-blue-500/20 shadow-xs"
-                : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700"
+                ? "border-blue-600 bg-blue-50/60 shadow-xs"
+                : "border-slate-200 bg-slate-50/50 hover:bg-slate-100/50 text-slate-700"
             }`}
           >
-            <div className="flex items-center justify-between w-full">
-              <span className="font-extrabold text-xs flex items-center gap-1.5 text-blue-700">
-                <MessageCircle className="w-4 h-4 fill-blue-600 text-white" />
+            <div className="flex items-center justify-between w-full mb-1">
+              <span className="flex items-center gap-1.5 font-bold text-xs text-blue-900">
+                <MessageCircle className="w-4 h-4 text-blue-600" />
                 <span>Zalo Order</span>
               </span>
-              {inZaloApp && (
-                <span className="text-[9px] bg-blue-600 text-white font-extrabold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                  <Sparkles className="w-2.5 h-2.5" /> Mini Zalo
-                </span>
+              {paymentMethod === "ZALO" && (
+                <CheckCircle2 className="w-4 h-4 text-blue-600" />
               )}
             </div>
-            <p className="text-[10px] text-slate-500 mt-1.5 leading-snug">
-              Tạo đơn & nhắn tin quán trực tiếp
+            <p className="text-[10px] text-slate-500 leading-tight">
+              Gửi tin nhắn đơn qua Zalo, nhận chè thanh toán khi nhận hàng (COD).
             </p>
           </button>
 
-          {/* Nút 2: Quét Mã VietQR */}
+          {/* Lựa chọn 2: Quét mã VietQR SePay */}
           <button
             type="button"
             onClick={() => setPaymentMethod("VIETQR")}
-            className={`p-3 rounded-xl border text-left transition flex flex-col justify-between cursor-pointer ${
+            className={`p-3 rounded-xl border-2 text-left transition flex flex-col justify-between relative cursor-pointer ${
               paymentMethod === "VIETQR"
-                ? "bg-orange-50/90 border-orange-500 text-orange-900 ring-2 ring-orange-500/20 shadow-xs"
-                : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700"
+                ? "border-orange-600 bg-orange-50/60 shadow-xs"
+                : "border-slate-200 bg-slate-50/50 hover:bg-slate-100/50 text-slate-700"
             }`}
           >
-            <div className="flex items-center justify-between w-full">
-              <span className="font-extrabold text-xs flex items-center gap-1.5 text-orange-700">
-                <QrCode className="w-4 h-4" />
-                <span>Quét VietQR</span>
+            <div className="flex items-center justify-between w-full mb-1">
+              <span className="flex items-center gap-1.5 font-bold text-xs text-orange-950">
+                <QrCode className="w-4 h-4 text-orange-600" />
+                <span>VietQR Chuyển Khoản</span>
               </span>
-              <span className="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded-full">
-                Tự động 24/7
-              </span>
+              {paymentMethod === "VIETQR" && (
+                <CheckCircle2 className="w-4 h-4 text-orange-600" />
+              )}
             </div>
-            <p className="text-[10px] text-slate-500 mt-1.5 leading-snug">
-              Chuyển khoản SePay duyệt tự động
+            <p className="text-[10px] text-slate-500 leading-tight">
+              Quét mã ngân hàng, hệ thống tự động xác nhận đơn 24/7.
             </p>
           </button>
         </div>
       </div>
+
+      {/* Honeypot chống bot */}
+      <input
+        type="text"
+        name="website_hp"
+        value={websiteHp}
+        onChange={(e) => setWebsiteHp(e.target.value)}
+        tabIndex={-1}
+        autoComplete="off"
+        className="hidden"
+        style={{ display: "none" }}
+      />
+
+      {/* Modal Ghim Bản Đồ Leaflet */}
+      <DeliveryMapModal
+        isOpen={isMapModalOpen}
+        onClose={() => setIsMapModalOpen(false)}
+        initialLat={userCoords.lat}
+        initialLng={userCoords.lng}
+        onConfirmLocation={handleConfirmPinMap}
+      />
     </div>
   );
 }

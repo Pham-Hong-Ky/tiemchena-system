@@ -68,6 +68,7 @@ export type CreateOrderPayload = {
   website_hp?: string;
   shippingFee?: number;
   distanceKm?: number | null;
+  distanceSource?: "ward" | "pin" | "gps" | "haversine" | string;
 };
 
 export async function createOrder(payload: CreateOrderPayload): Promise<OrderType> {
