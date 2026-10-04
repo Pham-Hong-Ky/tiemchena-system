@@ -3,6 +3,6 @@
 import React from "react";
 import { MenuManagerView } from "@/components/admin/menu/MenuManagerView";
 
-export default function AdminMenuPage() {
-  return <MenuManagerView section="all" />;
+export default function AdminDoUongMenuPage() {
+  return <MenuManagerView section="do-uong" />;
 }

@@ -10,7 +10,7 @@ import {
   Loader2,
   Flame,
   Star,
-  SlidersHorizontal,
+  Sparkles,
   AlertCircle,
 } from "lucide-react";
 import { ProductType, CategoryType } from "@/types";
@@ -89,7 +89,7 @@ export function ProductTable({
               selectedCat === "all" ? "bg-slate-900 text-white shadow-xs" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
-            🍽️ Tất Cả ({products.length})
+            Tất Cả ({products.length})
           </button>
 
           {/* Tab lọc các món đang ghim Banner */}
@@ -104,7 +104,7 @@ export function ProductTable({
                 : "bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200"
             }`}
           >
-            <span>🎯 Banner</span>
+            <span>Banner</span>
             <span
               className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
                 selectedCat === "banner"
@@ -188,8 +188,8 @@ export function ProductTable({
                             <div className="font-extrabold text-slate-900 text-sm">{p.name}</div>
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                               {!p.isAvailable && (
-                                <span className="bg-red-100 text-red-700 text-[10px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-0.5 border border-red-200">
-                                  🚫 Hết Hàng
+                                <span className="bg-red-100 text-red-700 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5 border border-red-200">
+                                  Hết Hàng
                                 </span>
                               )}
                               {p.isHot && (
@@ -214,17 +214,18 @@ export function ProductTable({
                                       ? "Đang ghim trên Banner (Nhấp để gỡ)"
                                       : "Nhấp để ghim lên Banner trang chủ"
                                   }
-                                  className={`text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5 transition cursor-pointer ${
+                                  className={`text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 transition cursor-pointer ${
                                     p.isOnBanner
                                       ? "bg-purple-100 text-purple-700 hover:bg-purple-200 border border-purple-300 shadow-2xs"
                                       : "bg-slate-100 text-slate-400 hover:text-purple-700 hover:bg-purple-50 border border-dashed border-slate-300"
                                   }`}
                                 >
-                                  <span>🎯 {p.isOnBanner ? "Banner" : "+ Banner"}</span>
+                                  <Sparkles className="w-2.5 h-2.5" />
+                                  <span>{p.isOnBanner ? "Banner" : "+ Banner"}</span>
                                 </button>
                               ) : p.isOnBanner ? (
-                                <span className="bg-purple-100 text-purple-700 text-[10px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-0.5 border border-purple-200">
-                                  🎯 Banner
+                                <span className="bg-purple-100 text-purple-700 text-[10px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-1 border border-purple-200">
+                                  <Sparkles className="w-2.5 h-2.5" /> Banner
                                 </span>
                               ) : null}
                             </div>
@@ -251,9 +252,8 @@ export function ProductTable({
 
                       {/* Options count */}
                       <td className="p-3.5">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs">
-                          <SlidersHorizontal className="w-3 h-3 text-slate-500" />
-                          <span>{optCount > 0 ? `${optCount} tùy chọn` : "Mặc định"}</span>
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs">
+                          {optCount > 0 ? `${optCount} tùy chọn` : "Mặc định"}
                         </span>
                       </td>
 

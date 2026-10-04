@@ -73,75 +73,96 @@ export const adminController = {
     try {
       const boardChanGa = await prisma.category.upsert({
         where: { slug: "chan-ga" },
-        update: { name: "Chuyên Chân Gà Sốt Thái", icon: "🍗", sortOrder: 1, isActive: true },
-        create: { name: "Chuyên Chân Gà Sốt Thái", slug: "chan-ga", icon: "🍗", sortOrder: 1, isActive: true },
+        update: { name: "Chuyên Chân Gà Sốt Thái", icon: null, sortOrder: 1, isActive: true },
+        create: { name: "Chuyên Chân Gà Sốt Thái", slug: "chan-ga", icon: null, sortOrder: 1, isActive: true },
       });
 
       const boardAnVat = await prisma.category.upsert({
         where: { slug: "an-vat-met" },
-        update: { name: "Bảng Ăn Vặt & Mẹt", icon: "🍢", sortOrder: 2, isActive: true },
-        create: { name: "Bảng Ăn Vặt & Mẹt", slug: "an-vat-met", icon: "🍢", sortOrder: 2, isActive: true },
+        update: { name: "Bảng Ăn Vặt & Mẹt", icon: null, sortOrder: 2, isActive: true },
+        create: { name: "Bảng Ăn Vặt & Mẹt", slug: "an-vat-met", icon: null, sortOrder: 2, isActive: true },
       });
 
-      const boardCheDoUong = await prisma.category.upsert({
-        where: { slug: "che-do-uong" },
-        update: { name: "Bảng Chè & Đồ Uống", icon: "🍧", sortOrder: 3, isActive: true },
-        create: { name: "Bảng Chè & Đồ Uống", slug: "che-do-uong", icon: "🍧", sortOrder: 3, isActive: true },
+      const boardChe = await prisma.category.upsert({
+        where: { slug: "che" },
+        update: { name: "Chè & Tráng Miệng", icon: null, sortOrder: 3, isActive: true },
+        create: { name: "Chè & Tráng Miệng", slug: "che", icon: null, sortOrder: 3, isActive: true },
       });
 
-      const chanGaUpdated = await prisma.product.updateMany({
-        where: {
-          OR: [
-            { name: { contains: "Chân Gà", mode: "insensitive" } },
-            { slug: { contains: "chan-ga" } },
-          ],
-        },
-        data: { categoryId: boardChanGa.id },
+      const boardDoUong = await prisma.category.upsert({
+        where: { slug: "do-uong" },
+        update: { name: "Đồ Uống & Trà Sữa", icon: null, sortOrder: 4, isActive: true },
+        create: { name: "Đồ Uống & Trà Sữa", slug: "do-uong", icon: null, sortOrder: 4, isActive: true },
       });
 
-      const oldCheOrNuoc = await prisma.category.findMany({
-        where: {
-          slug: { in: ["che", "nuoc-uong"] },
-        },
-      });
-      const oldCheOrNuocIds = oldCheOrNuoc.map((c) => c.id);
+      const allProducts = await prisma.product.findMany();
+      let chanGaCount = 0;
+      let anVatCount = 0;
+      let cheCount = 0;
+      let doUongCount = 0;
 
-      const cheUpdated = await prisma.product.updateMany({
-        where: {
-          OR: [
-            { categoryId: { in: oldCheOrNuocIds } },
-            { name: { contains: "Chè", mode: "insensitive" } },
-            { name: { contains: "Trà", mode: "insensitive" } },
-            { name: { contains: "Nước", mode: "insensitive" } },
-            { name: { contains: "Sinh Tố", mode: "insensitive" } },
-            { name: { contains: "Sữa Chua", mode: "insensitive" } },
-            { name: { contains: "Tào Phớ", mode: "insensitive" } },
-            { name: { contains: "Dừa Dầm", mode: "insensitive" } },
-          ],
-        },
-        data: { categoryId: boardCheDoUong.id },
-      });
+      for (const item of allProducts) {
+        const name = item.name.toLowerCase();
+        let targetCatId = boardAnVat.id;
 
-      const anVatUpdated = await prisma.product.updateMany({
-        where: {
-          categoryId: { notIn: [boardChanGa.id, boardCheDoUong.id] },
-        },
-        data: { categoryId: boardAnVat.id },
-      });
+        if (name.includes("chân gà")) {
+          targetCatId = boardChanGa.id;
+          chanGaCount++;
+        } else if (
+          name.includes("trà sữa") ||
+          name.startsWith("hồng trà") ||
+          name.startsWith("nước ép") ||
+          name.startsWith("ép ") ||
+          name.startsWith("trà ") ||
+          name.includes("trà đào") ||
+          name.includes("trà quất") ||
+          name.includes("trà chanh") ||
+          name.includes("trà me") ||
+          name.includes("nước chanh") ||
+          name.includes("coca") ||
+          name.includes("lavie") ||
+          name.includes("bia")
+        ) {
+          targetCatId = boardDoUong.id;
+          doUongCount++;
+        } else if (
+          name.startsWith("chè") ||
+          name.includes("chè ") ||
+          name.includes("caramen") ||
+          name.includes("tào phớ") ||
+          name.includes("sữa chua") ||
+          name.includes("dừa dầm") ||
+          name.includes("dừa non") ||
+          name.includes("hoa quả dầm")
+        ) {
+          targetCatId = boardChe.id;
+          cheCount++;
+        } else {
+          targetCatId = boardAnVat.id;
+          anVatCount++;
+        }
+
+        await prisma.product.update({
+          where: { id: item.id },
+          data: { categoryId: targetCatId },
+        });
+      }
 
       await prisma.category.deleteMany({
         where: {
-          slug: { in: ["do-an", "che", "nuoc-uong"] },
+          slug: { in: ["che-do-uong", "do-an", "nuoc-uong"] },
+          products: { none: {} },
         },
       });
 
       return NextResponse.json({
         success: true,
-        message: "Đã đồng bộ thực đơn và danh mục theo đúng 3 bảng của quán!",
+        message: "Đã đồng bộ thực đơn và danh mục thành công!",
         data: {
-          chanGaCount: chanGaUpdated.count,
-          cheDoUongCount: cheUpdated.count,
-          anVatCount: anVatUpdated.count,
+          chanGaCount,
+          anVatCount,
+          cheCount,
+          doUongCount,
         },
       });
     } catch (error) {

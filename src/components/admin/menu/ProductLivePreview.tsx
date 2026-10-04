@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Eye, Flame, Plus, SlidersHorizontal } from "lucide-react";
+import { Eye, Flame, Star, Sparkles, Plus, SlidersHorizontal } from "lucide-react";
 import { ProductOptionType } from "@/types";
 
 interface ProductLivePreviewProps {
@@ -58,20 +58,23 @@ export function ProductLivePreview({
               className="w-full h-full object-cover"
             />
 
-            <div className="absolute top-2.5 left-2.5 flex flex-col gap-1">
+            <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start">
               {isHot && (
-                <span className="bg-red-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-0.5">
-                  <Flame className="w-3.5 h-3.5" /> HOT
+                <span className="bg-red-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                  <Flame className="w-3 h-3 fill-current" />
+                  <span>HOT</span>
                 </span>
               )}
               {isBestseller && (
-                <span className="bg-amber-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
-                  ⭐ Bestseller
+                <span className="bg-amber-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                  <Star className="w-3 h-3 fill-current" />
+                  <span>BESTSELLER</span>
                 </span>
               )}
               {isOnBanner && (
-                <span className="bg-purple-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
-                  🎯 Banner
+                <span className="bg-purple-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 fill-current" />
+                  <span>BANNER</span>
                 </span>
               )}
             </div>

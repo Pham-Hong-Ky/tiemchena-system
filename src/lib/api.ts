@@ -124,7 +124,7 @@ export async function validateVoucher(code: string): Promise<VoucherResult> {
 
 // ─── Categories API ───────────────────────────────────────────────────────────
 
-import { CategoryType, CustomerType, TagType, FeedbackType } from "@/types";
+import { CategoryType, CustomerType, FeedbackType } from "@/types";
 
 export async function getCategories(all = false): Promise<CategoryType[]> {
   return apiFetch<CategoryType[]>(`/api/categories${all ? "?all=true" : ""}`);
@@ -165,51 +165,6 @@ export async function deleteCategory(id: string): Promise<{ success: boolean; me
 
 export async function getCustomers(): Promise<CustomerType[]> {
   return apiFetch<CustomerType[]>("/api/customers");
-}
-
-// ─── Tags API ─────────────────────────────────────────────────────────────────
-
-export async function getTags(): Promise<TagType[]> {
-  return apiFetch<TagType[]>("/api/tags");
-}
-
-export async function createTag(payload: {
-  code: string;
-  name: string;
-  icon?: string;
-  badgeColor?: string;
-  textColor?: string;
-  description?: string;
-  sortOrder?: number;
-  isActive?: boolean;
-}): Promise<TagType> {
-  return apiFetch<TagType>("/api/tags", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function updateTag(payload: {
-  id: string;
-  code?: string;
-  name?: string;
-  icon?: string;
-  badgeColor?: string;
-  textColor?: string;
-  description?: string;
-  sortOrder?: number;
-  isActive?: boolean;
-}): Promise<TagType> {
-  return apiFetch<TagType>("/api/tags", {
-    method: "PUT",
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function deleteTag(id: string): Promise<{ success: boolean; message?: string }> {
-  return apiFetch<{ success: boolean; message?: string }>(`/api/tags?id=${id}`, {
-    method: "DELETE",
-  });
 }
 
 // ─── Upload API ───────────────────────────────────────────────────────────────

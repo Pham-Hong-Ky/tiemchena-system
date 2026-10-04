@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import QRCode from "qrcode";
 import {
   QrCode,
   X,
@@ -14,14 +15,15 @@ import {
 import { OrderType } from "@/types";
 import { playOrderNotificationSound } from "@/lib/notificationSound";
 import { toast } from "@/context/ToastContext";
+import { generateVietQrEmvCo } from "@/lib/vietqr";
 
 interface VietQrPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: OrderType | null;
-  bankId: string;
-  accountName: string;
-  accountNumber: string;
+  bankId?: string;
+  accountName?: string;
+  accountNumber?: string;
   onPaymentSuccess: (paidOrder: OrderType) => void;
 }
 
@@ -29,24 +31,66 @@ export function VietQrPaymentModal({
   isOpen,
   onClose,
   order,
-  bankId,
-  accountName,
-  accountNumber,
+  bankId = "MB",
+  accountName = "TIEM CHE NA",
+  accountNumber = "0986479285",
   onPaymentSuccess,
 }: VietQrPaymentModalProps) {
   const [copiedMemo, setCopiedMemo] = useState(false);
   const [copiedAccount, setCopiedAccount] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
   const [paidOrder, setPaidOrder] = useState<OrderType | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const [isGeneratingQr, setIsGeneratingQr] = useState(true);
 
-  // Reset state when a new order is passed
+  // Đảm bảo số tài khoản và ngân hàng luôn có giá trị an toàn
+  const safeBankId = bankId || "MB";
+  const safeAccountNumber = accountNumber || "0986479285";
+  const safeAccountName = accountName || "TIEM CHE NA";
+
+  // Reset state and generate instant VietQR when a new order is passed
   useEffect(() => {
     if (order) {
       const alreadyPaid = order.paymentStatus === "PAID";
       setIsPaid(alreadyPaid);
       setPaidOrder(alreadyPaid ? order : null);
+      setIsGeneratingQr(true);
+
+      const transferMemo = `TCN ${order.orderCode.replace(/[^0-9]/g, "")}`;
+
+      // 1. Tạo chuỗi chuẩn VietQR EMVCo (tương thích 100% app ngân hàng VN)
+      const emvCoString = generateVietQrEmvCo({
+        bankId: safeBankId,
+        accountNumber: safeAccountNumber,
+        amount: order.finalAmount,
+        memo: transferMemo,
+      });
+
+      // 2. Tạo QR Code cục bộ trực tiếp (0ms, không phụ thuộc máy chủ trung gian)
+      QRCode.toDataURL(emvCoString, {
+        width: 320,
+        margin: 1,
+        color: {
+          dark: "#0f172a",
+          light: "#ffffff",
+        },
+        errorCorrectionLevel: "M",
+      })
+        .then((dataUrl) => {
+          setQrDataUrl(dataUrl);
+          setIsGeneratingQr(false);
+        })
+        .catch((err) => {
+          console.error("QR Code generate error:", err);
+          // Fallback sang link VietQR online nếu QRCode lỗi
+          const fallbackUrl = `https://img.vietqr.io/image/${safeBankId}-${safeAccountNumber}-compact2.png?amount=${order.finalAmount}&addInfo=${encodeURIComponent(
+            transferMemo
+          )}&accountName=${encodeURIComponent(safeAccountName)}`;
+          setQrDataUrl(fallbackUrl);
+          setIsGeneratingQr(false);
+        });
     }
-  }, [order]);
+  }, [order, safeBankId, safeAccountNumber, safeAccountName]);
 
   // Polling SePay / Order payment status every 2 seconds
   useEffect(() => {
@@ -78,9 +122,9 @@ export function VietQrPaymentModal({
   // Memo formatted for SePay webhook matching (e.g. TCN 825197)
   const transferMemo = `TCN ${order.orderCode.replace(/[^0-9]/g, "")}`;
 
-  const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNumber}-compact2.png?amount=${order.finalAmount}&addInfo=${encodeURIComponent(
+  const qrUrl = `https://img.vietqr.io/image/${safeBankId}-${safeAccountNumber}-compact2.png?amount=${order.finalAmount}&addInfo=${encodeURIComponent(
     transferMemo
-  )}&accountName=${encodeURIComponent(accountName)}`;
+  )}&accountName=${encodeURIComponent(safeAccountName)}`;
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
@@ -163,13 +207,22 @@ export function VietQrPaymentModal({
               </div>
             </div>
 
-            {/* QR Image Box */}
+            {/* QR Image Box with instant offline VietQR rendering */}
             <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-center space-y-2">
-              <img
-                src={qrUrl}
-                alt="VietQR SePay Chuyển Khoản"
-                className="w-52 h-52 mx-auto rounded-xl shadow-xs border border-slate-200 object-contain"
-              />
+              <div className="relative w-52 h-52 mx-auto bg-white rounded-xl shadow-xs border border-slate-200 flex items-center justify-center p-2">
+                {isGeneratingQr || !qrDataUrl ? (
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+                    <span className="text-[11px] text-slate-500 font-medium">Đang tạo mã VietQR...</span>
+                  </div>
+                ) : (
+                  <img
+                    src={qrDataUrl}
+                    alt="VietQR Chuyển Khoản"
+                    className="w-full h-full object-contain rounded-lg"
+                  />
+                )}
+              </div>
               <p className="text-[11px] text-slate-500 font-medium flex items-center justify-center gap-1">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 <span>Mở App Ngân hàng hoặc MoMo quét mã</span>
@@ -180,20 +233,20 @@ export function VietQrPaymentModal({
             <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-slate-500">Ngân hàng:</span>
-                <span className="font-bold text-slate-800">{bankId}</span>
+                <span className="font-bold text-slate-800">{safeBankId}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-500">Chủ tài khoản:</span>
-                <span className="font-bold text-slate-800">{accountName}</span>
+                <span className="font-bold text-slate-800">{safeAccountName}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-500">Số tài khoản:</span>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-black text-slate-900 font-mono text-sm">{accountNumber}</span>
+                  <span className="font-black text-slate-900 font-mono text-sm">{safeAccountNumber}</span>
                   <button
                     type="button"
                     onClick={() => {
-                      navigator.clipboard.writeText(accountNumber);
+                      navigator.clipboard.writeText(safeAccountNumber);
                       setCopiedAccount(true);
                       setTimeout(() => setCopiedAccount(false), 2000);
                     }}

@@ -98,10 +98,10 @@ export function ExclusiveSetsSection({ onSelectCategory }: ExclusiveSetsSectionP
               </p>
               <div className="pt-2">
                 <button
-                  onClick={() => handleNavigate("che-do-uong")}
+                  onClick={() => handleNavigate("che")}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-100 text-slate-900 font-extrabold text-xs sm:text-sm py-3 px-6 rounded-2xl shadow-lg shadow-black/20 transition-all active:scale-95 cursor-pointer"
                 >
-                  <span>Xem Menu Chè & Đồ Uống</span>
+                  <span>Xem Menu Chè & Tráng Miệng</span>
                   <ArrowRight className="w-4 h-4 text-orange-600" />
                 </button>
               </div>
