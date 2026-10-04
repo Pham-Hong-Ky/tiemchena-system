@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { SHOP_ENV } from "@/config/shopEnv";
 
 export const settingService = {
   async getSettings() {
@@ -11,14 +12,14 @@ export const settingService = {
         data: {
           id: "default",
           storeName: "Tiệm Chè Na",
-          hotline: "0986.479.285",
+          hotline: SHOP_ENV.hotline || "Tiệm Chè Na",
           address: "Vũ Lăng, Ngũ Hiệp, Thanh Trì, Hà Nội",
           openingHours: "09:00 - 22:30",
           bannerAnnouncement: "GIẢM NGAY 10% tổng hóa đơn khi đặt trước hoặc chốt đơn qua Zalo hôm nay!",
-          qrBankId: process.env.NEXT_PUBLIC_VIETQR_BANK_ID || "MB",
-          qrAccountNumber: process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NO || "0986479285",
-          qrAccountName: process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NAME || "TIEM CHE NA",
-          zaloUrl: "https://zalo.me/0986479285",
+          qrBankId: SHOP_ENV.bankId,
+          qrAccountNumber: SHOP_ENV.accountNumber,
+          qrAccountName: SHOP_ENV.accountName,
+          zaloUrl: SHOP_ENV.zaloPhone ? `https://zalo.me/${SHOP_ENV.zaloPhone}` : "",
           isAcceptingOrders: true,
         },
       });
@@ -26,9 +27,11 @@ export const settingService = {
 
     return {
       ...setting,
-      qrBankId: process.env.NEXT_PUBLIC_VIETQR_BANK_ID || setting.qrBankId || "MB",
-      qrAccountNumber: process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NO || setting.qrAccountNumber || "0986479285",
-      qrAccountName: process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NAME || setting.qrAccountName || "TIEM CHE NA",
+      hotline: SHOP_ENV.hotline || setting.hotline,
+      qrBankId: SHOP_ENV.bankId || setting.qrBankId,
+      qrAccountNumber: SHOP_ENV.accountNumber || setting.qrAccountNumber,
+      qrAccountName: SHOP_ENV.accountName || setting.qrAccountName,
+      zaloUrl: SHOP_ENV.zaloPhone ? `https://zalo.me/${SHOP_ENV.zaloPhone}` : setting.zaloUrl,
       isBankLocked: true,
     };
   },
@@ -42,17 +45,19 @@ export const settingService = {
       create: {
         id: "default",
         ...safeUpdateData,
-        qrBankId: process.env.NEXT_PUBLIC_VIETQR_BANK_ID || "MB",
-        qrAccountNumber: process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NO || "0986479285",
-        qrAccountName: process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NAME || "TIEM CHE NA",
+        qrBankId: SHOP_ENV.bankId,
+        qrAccountNumber: SHOP_ENV.accountNumber,
+        qrAccountName: SHOP_ENV.accountName,
       },
     });
 
     return {
       ...updated,
-      qrBankId: process.env.NEXT_PUBLIC_VIETQR_BANK_ID || updated.qrBankId,
-      qrAccountNumber: process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NO || updated.qrAccountNumber,
-      qrAccountName: process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NAME || updated.qrAccountName,
+      hotline: SHOP_ENV.hotline || updated.hotline,
+      qrBankId: SHOP_ENV.bankId || updated.qrBankId,
+      qrAccountNumber: SHOP_ENV.accountNumber || updated.qrAccountNumber,
+      qrAccountName: SHOP_ENV.accountName || updated.qrAccountName,
+      zaloUrl: SHOP_ENV.zaloPhone ? `https://zalo.me/${SHOP_ENV.zaloPhone}` : updated.zaloUrl,
       isBankLocked: true,
     };
   },

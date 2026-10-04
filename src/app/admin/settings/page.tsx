@@ -8,19 +8,20 @@ import { getSettings, saveSettings } from "@/lib/api";
 import { StoreSettingType } from "@/types";
 import { toast } from "@/context/ToastContext";
 import { ThemeSelector } from "@/components/admin/ThemeSelector";
+import { SHOP_ENV } from "@/config/shopEnv";
 
 const DEFAULT_SETTINGS: StoreSettingType = {
   id: "default",
   storeName: "Tiệm Chè Na",
-  hotline: "0986.479.285",
+  hotline: SHOP_ENV.hotline || "",
   address: "Vũ Lăng, Ngũ Hiệp, Thanh Trì, Hà Nội",
   openingHours: "09:00 - 22:30",
   bannerAnnouncement:
     "GIẢM NGAY 10% tổng hóa đơn khi đặt trước hoặc chốt đơn qua Zalo hôm nay!",
-  qrBankId: "MB",
-  qrAccountNumber: "0986479285",
-  qrAccountName: "TIEM CHE NA",
-  zaloUrl: "https://zalo.me/0986479285",
+  qrBankId: SHOP_ENV.bankId || "MB",
+  qrAccountNumber: SHOP_ENV.accountNumber || "",
+  qrAccountName: SHOP_ENV.accountName || "TIEM CHE NA",
+  zaloUrl: SHOP_ENV.zaloPhone ? `https://zalo.me/${SHOP_ENV.zaloPhone}` : "",
   isAcceptingOrders: true,
 };
 

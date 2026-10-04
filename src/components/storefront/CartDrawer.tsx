@@ -23,6 +23,7 @@ import {
 } from "@/lib/orderValidation";
 import { isRunningInZalo, openZaloShopChat } from "@/lib/zaloMiniApp";
 import { resolveProductOptions, buildZaloOrderMessage } from "@/lib/cartHelpers";
+import { SHOP_ENV } from "@/config/shopEnv";
 import { CartDrawerItem } from "./cart/CartDrawerItem";
 import { CartDeliveryForm } from "./cart/CartDeliveryForm";
 import { VietQrPaymentModal } from "./cart/VietQrPaymentModal";
@@ -78,10 +79,11 @@ export function CartDrawer({
   const [inZaloApp, setInZaloApp] = useState(false);
   const [expandedItemIdx, setExpandedItemIdx] = useState<number | null>(null);
 
-  // Bank Info from ENV
-  const bankId = process.env.NEXT_PUBLIC_VIETQR_BANK_ID || "MB";
-  const accountNumber = process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NO || "0986479285";
-  const accountName = process.env.NEXT_PUBLIC_VIETQR_ACCOUNT_NAME || "TIEM CHE NA";
+  // Bank & Contact Info from ENV (100% dynamic, không hardcode fallback)
+  const bankId = SHOP_ENV.bankId;
+  const accountNumber = SHOP_ENV.accountNumber;
+  const accountName = SHOP_ENV.accountName;
+  const zaloPhone = SHOP_ENV.zaloPhone;
 
   useEffect(() => {
     setInZaloApp(isRunningInZalo());
@@ -205,7 +207,7 @@ export function CartDrawer({
         toast.info("Đã sao chép đơn! Bạn chỉ cần dán (Paste) vào Zalo là xong.");
       }
 
-      openZaloShopChat("0986479285", message);
+      openZaloShopChat(zaloPhone, message);
 
       clearCart();
       setIsCartOpen(false);
