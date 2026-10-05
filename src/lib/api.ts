@@ -183,7 +183,7 @@ export async function createCustomer(payload: CustomerPayload): Promise<Customer
 
 export async function importCustomers(
   rows: CustomerPayload[]
-): Promise<{ created: number; skipped: number; errors: string[] }> {
+): Promise<{ created: number; updated: number; skipped: number; errors: string[] }> {
   return apiFetch("/api/customers", { method: "POST", body: JSON.stringify({ import: rows, source: "waitlist" }) });
 }
 

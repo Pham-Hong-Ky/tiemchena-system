@@ -149,9 +149,10 @@ export const customerService = {
     return prisma.customer.create({ data: { ...data, source: "manual" } });
   },
 
-  // Nhập hàng loạt từ danh sách chờ – bỏ qua số trùng
+  // Nhập hàng loạt từ danh sách chờ – số đã có thì gắn nguồn "danh sách chờ" + bổ sung ô còn trống
   async importCustomers(rows: CustomerInput[], source: "waitlist" | "manual" = "waitlist") {
     let created = 0;
+    let updated = 0;
     let skipped = 0;
     const errors: string[] = [];
     for (const raw of rows.slice(0, 500)) {
@@ -164,13 +165,24 @@ export const customerService = {
       }
       const exists = await prisma.customer.findUnique({ where: { phone: data.phone } });
       if (exists) {
-        skipped++;
+        const patch = {
+          ...(source === "waitlist" && exists.source === "order" && { source }),
+          ...(!exists.address && data.address && { address: data.address }),
+          ...(!exists.note && data.note && { note: data.note }),
+          ...(!exists.email && data.email && { email: data.email }),
+        };
+        if (Object.keys(patch).length > 0) {
+          await prisma.customer.update({ where: { id: exists.id }, data: patch });
+          updated++;
+        } else {
+          skipped++;
+        }
         continue;
       }
       await prisma.customer.create({ data: { ...data, source } });
       created++;
     }
-    return { created, skipped, errors };
+    return { created, updated, skipped, errors };
   },
 
   // Sửa khách (Admin)
