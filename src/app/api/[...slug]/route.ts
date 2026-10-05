@@ -149,6 +149,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return geocodeController.estimate(request);
   }
 
+  // 11. Customers (CRM): POST /api/customers
+  if (p1 === "customers" && !p2) {
+    return customerController.post(request);
+  }
+
   return NextResponse.json({ success: false, error: "API Route not found" }, { status: 404 });
 }
 
@@ -172,6 +177,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   // 3. Settings: PUT /api/settings
   if (p1 === "settings" && !p2) {
     return settingController.put(request);
+  }
+
+  // 4. Customers (CRM): PUT /api/customers
+  if (p1 === "customers" && !p2) {
+    return customerController.put(request);
   }
 
   return NextResponse.json({ success: false, error: "API Route not found" }, { status: 404 });
@@ -215,6 +225,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   // 3. Categories: DELETE /api/categories
   if (p1 === "categories" && !p2) {
     return categoryController.delete(request);
+  }
+
+  // 4. Customers (CRM): DELETE /api/customers?id=...
+  if (p1 === "customers" && !p2) {
+    return customerController.delete(request);
   }
 
   return NextResponse.json({ success: false, error: "API Route not found" }, { status: 404 });

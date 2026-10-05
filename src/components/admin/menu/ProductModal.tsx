@@ -45,6 +45,8 @@ export function ProductModal({
   const [formIsBestseller, setFormIsBestseller] = useState(false);
   const [formIsOnBanner, setFormIsOnBanner] = useState(false);
   const [formIsAvailable, setFormIsAvailable] = useState(true);
+  const [formProductType, setFormProductType] = useState<string>("physical");
+  const [formStock, setFormStock] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   // Image Cropper State
@@ -89,6 +91,10 @@ export function ProductModal({
       setFormIsBestseller(editingProduct.isBestseller || false);
       setFormIsOnBanner(editingProduct.isOnBanner || false);
       setFormIsAvailable(editingProduct.isAvailable !== undefined ? editingProduct.isAvailable : true);
+      setFormProductType(editingProduct.productType || "physical");
+      setFormStock(
+        editingProduct.stock !== null && editingProduct.stock !== undefined ? String(editingProduct.stock) : ""
+      );
 
       if (editingProduct.toppingsJson) {
         try {
@@ -136,6 +142,8 @@ export function ProductModal({
       setFormIsBestseller(false);
       setFormIsOnBanner(false);
       setFormIsAvailable(true);
+      setFormProductType("physical");
+      setFormStock("");
       setFormOptions([]);
     }
   }, [isOpen, editingProduct, categories, toppings, defaultCategoryId]);
@@ -168,9 +176,19 @@ export function ProductModal({
       }
     }
 
+    if (formProductType === "physical" && formStock.trim() !== "") {
+      const n = Number(formStock);
+      if (!Number.isInteger(n) || n < 0) {
+        toast.warning("Tồn kho phải là số nguyên ≥ 0 (để trống nếu không theo dõi kho)");
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       const payload = {
+        productType: formProductType,
+        stock: formProductType === "physical" && formStock.trim() !== "" ? Number(formStock) : null,
         name: formName.trim(),
         price: priceNum,
         originalPrice: origPriceNum,
@@ -274,6 +292,45 @@ export function ProductModal({
                   allProducts={allProducts}
                   editingProduct={editingProduct}
                 />
+
+                {/* Product type & stock */}
+                <div className="space-y-3 pt-2 border-t border-slate-100">
+                  <h4 className="font-extrabold uppercase tracking-wider text-[11px] text-orange-600">
+                    Loại Sản Phẩm & Tồn Kho
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-700">Loại sản phẩm</label>
+                      <select
+                        value={formProductType}
+                        onChange={(e) => setFormProductType(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white cursor-pointer"
+                      >
+                        <option value="physical">Vật lý (món ăn, hàng hóa)</option>
+                        <option value="digital">Sản phẩm số (ebook, file…)</option>
+                        <option value="service">Dịch vụ</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-700">Tồn kho</label>
+                      {formProductType === "physical" ? (
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={formStock}
+                          onChange={(e) => setFormStock(e.target.value)}
+                          placeholder="Để trống = không theo dõi"
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white"
+                        />
+                      ) : (
+                        <p className="px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 text-[11px] font-semibold">
+                          Không trừ kho với sản phẩm số / dịch vụ
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
                 {/* Product Options / Toppings */}
                 <ProductOptionsEditor

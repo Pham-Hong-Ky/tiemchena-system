@@ -1,16 +1,32 @@
 import { prisma } from "@/lib/prisma";
 import { orderEvents } from "@/lib/orderEvents";
+import { memoryCache } from "@/lib/memoryCache";
 import {
   validatePhoneNumber,
   validateCustomerName,
   validateCustomerAddress,
+  validateEmail,
   checkRateLimit,
   validateOpeningHours,
 } from "@/lib/orderValidation";
 
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+// Trả lại tồn kho cho các món VẬT LÝ có theo dõi kho của 1 đơn (khi hủy đơn)
+async function restoreStock(tx: Tx, items: { productId: string | null; quantity: number }[]) {
+  for (const item of items) {
+    if (!item.productId) continue;
+    await tx.product.updateMany({
+      where: { id: item.productId, productType: "physical", stock: { not: null } },
+      data: { stock: { increment: item.quantity } },
+    });
+  }
+}
+
 export interface CreateOrderInput {
   customerName: string;
   customerPhone: string;
+  customerEmail?: string;
   customerAddress: string;
   note?: string;
   paymentMethod?: string;
@@ -113,9 +129,20 @@ export const orderService = {
 
   // Tạo đơn hàng mới
   async createOrder(data: CreateOrderInput, clientIp: string) {
-    // 0. Kiểm tra giờ mở cửa của quán (09:00 - 22:00)
+    // Đơn chỉ gồm sản phẩm số / dịch vụ: không cần giao hàng, không phụ thuộc giờ bếp
+    const requestedIds = Array.isArray(data.items) ? data.items.map((i) => i.id).filter(Boolean) : [];
+    const requestedTypes = requestedIds.length
+      ? await prisma.product.findMany({ where: { id: { in: requestedIds } }, select: { productType: true } })
+      : [];
+    const isNonPhysicalOnly =
+      requestedTypes.length > 0 && requestedTypes.every((p) => p.productType && p.productType !== "physical");
+    if (isNonPhysicalOnly && !String(data.customerAddress || "").trim()) {
+      data.customerAddress = "Sản phẩm số / dịch vụ – không cần giao hàng";
+    }
+
+    // 0. Kiểm tra giờ mở cửa của quán (09:00 - 22:00) – chỉ áp dụng khi có món cần bếp làm
     const timeCheck = validateOpeningHours();
-    if (!timeCheck.isOpen) {
+    if (!isNonPhysicalOnly && !timeCheck.isOpen) {
       throw new Error(timeCheck.error || "Quán chỉ nhận đơn đặt hàng từ 09:00 đến 22:00");
     }
 
@@ -161,6 +188,10 @@ export const orderService = {
     const addressCheck = validateCustomerAddress(data.customerAddress);
     if (!addressCheck.valid) throw new Error(addressCheck.error || "Địa chỉ không hợp lệ");
 
+    const emailCheck = validateEmail(data.customerEmail);
+    if (!emailCheck.valid) throw new Error(emailCheck.error || "Email không hợp lệ");
+    const cleanEmail = data.customerEmail ? data.customerEmail.trim().toLowerCase() : null;
+
     if (!data.items || data.items.length === 0) {
       throw new Error("Giỏ hàng của bạn đang trống");
     }
@@ -179,6 +210,9 @@ export const orderService = {
 
     let totalAmount = 0;
     const orderItemsData: any[] = [];
+    // Số lượng cần trừ kho – CHỈ sản phẩm vật lý có theo dõi tồn kho (stock != null).
+    // Sản phẩm số / dịch vụ không bao giờ trừ kho.
+    const stockToDeduct = new Map<string, { name: string; qty: number; stock: number }>();
 
     for (const item of data.items) {
       const dbProduct = dbProducts.find((p) => p.id === item.id);
@@ -188,6 +222,12 @@ export const orderService = {
       }
 
       const qty = Math.max(1, Math.min(99, Number(item.quantity) || 1));
+
+      if (dbProduct.productType === "physical" && dbProduct.stock !== null) {
+        const prev = stockToDeduct.get(dbProduct.id);
+        stockToDeduct.set(dbProduct.id, { name: dbProduct.name, qty: (prev?.qty || 0) + qty, stock: dbProduct.stock });
+      }
+
       let toppingSum = 0;
       const validToppings: any[] = [];
 
@@ -213,6 +253,17 @@ export const orderService = {
         itemTotal: lineTotal,
         note: item.note ? String(item.note).slice(0, 200) : null,
       });
+    }
+
+    // 4b. Không đủ tồn kho → báo khách ngay, không tạo đơn
+    for (const [, s] of stockToDeduct) {
+      if (s.stock < s.qty) {
+        throw new Error(
+          s.stock <= 0
+            ? `Món "${s.name}" hiện đang hết hàng, quý khách vui lòng chọn món khác!`
+            : `Món "${s.name}" chỉ còn ${s.stock} phần, quý khách vui lòng giảm số lượng`
+        );
+      }
     }
 
     // 5. Voucher
@@ -255,11 +306,24 @@ export const orderService = {
       finalNote = finalNote ? `${shipTag} ${finalNote}` : shipTag;
     }
 
-    const order = await prisma.order.create({
+    // Tạo đơn + trừ kho trong 1 transaction: trừ kho thất bại (2 khách mua cùng lúc) thì không tạo đơn
+    const order = await prisma.$transaction(async (tx) => {
+      for (const [productId, s] of stockToDeduct) {
+        const res = await tx.product.updateMany({
+          where: { id: productId, stock: { gte: s.qty } },
+          data: { stock: { decrement: s.qty } },
+        });
+        if (res.count === 0) {
+          throw new Error(`Món "${s.name}" vừa hết hàng, quý khách vui lòng chọn món khác!`);
+        }
+      }
+
+      return tx.order.create({
       data: {
         orderCode,
         customerName: data.customerName.trim(),
         customerPhone: cleanPhone,
+        customerEmail: cleanEmail,
         customerAddress: data.customerAddress.trim(),
         note: finalNote,
         ...(clientIp ? { ipAddress: clientIp } : {}),
@@ -278,6 +342,31 @@ export const orderService = {
         items: true,
       },
     });
+    });
+
+    if (stockToDeduct.size > 0) memoryCache.invalidatePrefix("products:");
+
+    // Lưu / cập nhật khách vào CRM (không chặn đơn nếu lỗi)
+    try {
+      await prisma.customer.upsert({
+        where: { phone: cleanPhone },
+        create: {
+          name: data.customerName.trim(),
+          phone: cleanPhone,
+          zalo: cleanPhone,
+          email: cleanEmail,
+          address: data.customerAddress.trim(),
+          source: "order",
+        },
+        update: {
+          name: data.customerName.trim(),
+          address: data.customerAddress.trim(),
+          ...(cleanEmail ? { email: cleanEmail } : {}),
+        },
+      });
+    } catch (e) {
+      console.warn("Customer upsert warning:", e);
+    }
 
     orderEvents.emit("new_order", order);
     return order;
@@ -313,18 +402,25 @@ export const orderService = {
       }
     }
 
-    const updated = await prisma.order.update({
-      where: { id },
-      data: {
-        orderStatus: "CANCELLED",
-        note: order.note
-          ? `[🚫 ĐÃ CHẶN BOM HÀNG] ${order.note}`
-          : "[🚫 ĐÃ CHẶN BOM HÀNG]",
-      },
-      include: {
-        items: true,
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      if (order.orderStatus !== "CANCELLED") {
+        const items = await tx.orderItem.findMany({ where: { orderId: id }, select: { productId: true, quantity: true } });
+        await restoreStock(tx, items);
+      }
+      return tx.order.update({
+        where: { id },
+        data: {
+          orderStatus: "CANCELLED",
+          note: order.note
+            ? `[🚫 ĐÃ CHẶN BOM HÀNG] ${order.note}`
+            : "[🚫 ĐÃ CHẶN BOM HÀNG]",
+        },
+        include: {
+          items: true,
+        },
+      });
     });
+    memoryCache.invalidatePrefix("products:");
 
     orderEvents.emit("order_updated", updated);
     return updated;
@@ -332,17 +428,28 @@ export const orderService = {
 
   // Cập nhật trạng thái đơn hàng (Admin)
   async updateOrder(id: string, data: { orderStatus?: string; paymentStatus?: string; note?: string }) {
-    const updated = await prisma.order.update({
-      where: { id },
-      data: {
-        ...(data.orderStatus ? { orderStatus: data.orderStatus } : {}),
-        ...(data.paymentStatus ? { paymentStatus: data.paymentStatus } : {}),
-        ...(data.note !== undefined ? { note: data.note } : {}),
-      },
-      include: {
-        items: true,
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      const current = await tx.order.findUnique({ where: { id }, include: { items: true } });
+      if (!current) throw new Error("Không tìm thấy đơn hàng");
+
+      // Hủy đơn → trả lại tồn kho hàng vật lý
+      if (data.orderStatus === "CANCELLED" && current.orderStatus !== "CANCELLED") {
+        await restoreStock(tx, current.items);
+      }
+
+      return tx.order.update({
+        where: { id },
+        data: {
+          ...(data.orderStatus ? { orderStatus: data.orderStatus } : {}),
+          ...(data.paymentStatus ? { paymentStatus: data.paymentStatus } : {}),
+          ...(data.note !== undefined ? { note: data.note } : {}),
+        },
+        include: {
+          items: true,
+        },
+      });
     });
+    if (data.orderStatus === "CANCELLED") memoryCache.invalidatePrefix("products:");
 
     orderEvents.emit("order_updated", updated);
     return updated;

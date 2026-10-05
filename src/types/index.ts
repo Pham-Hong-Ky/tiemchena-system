@@ -40,6 +40,10 @@ export interface ProductType {
   categoryId: string;
   category?: CategoryType;
   toppingsJson?: string | null;
+  /** physical = hàng vật lý (trừ kho) · digital = sản phẩm số · service = dịch vụ (không trừ kho) */
+  productType?: "physical" | "digital" | "service" | string;
+  /** Tồn kho – chỉ áp dụng cho physical; null = không theo dõi */
+  stock?: number | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -63,6 +67,7 @@ export interface OrderType {
   customerName: string;
   customerPhone: string;
   customerAddress: string;
+  customerEmail?: string | null;
   note?: string | null;
   paymentMethod: string;
   paymentStatus: string;
@@ -106,6 +111,13 @@ export interface StatsType {
 }
 
 export interface CustomerType {
+  /** id trong bảng Customer (CRM); không có nếu khách chỉ xuất hiện trong đơn hàng */
+  id?: string;
+  email?: string | null;
+  zalo?: string | null;
+  /** order | waitlist | manual */
+  source?: string;
+  createdAt?: string;
   phone: string;
   name: string;
   address: string;

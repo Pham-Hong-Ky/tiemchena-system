@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { validatePrice, validateToppingsJson } from "@/lib/productValidation";
+import { validatePrice, validateToppingsJson, validateTypeAndStock } from "@/lib/productValidation";
 import { memoryCache } from "@/lib/memoryCache";
 
 export const productService = {
@@ -52,11 +52,14 @@ export const productService = {
 
   // Tạo sản phẩm mới
   async createProduct(data: any) {
-    const { name, slug, description, price, originalPrice, image, isHot, isBestseller, isOnBanner, isAvailable, categoryId, toppingsJson } = data;
+    const { name, slug, description, price, originalPrice, image, isHot, isBestseller, isOnBanner, isAvailable, categoryId, toppingsJson, productType, stock } = data;
 
     if (!name || price === undefined || price === null || !categoryId) {
       throw new Error("Vui lòng điền đủ tên, giá và danh mục món ăn");
     }
+
+    const typeStock = validateTypeAndStock(productType, stock);
+    if (!typeStock.valid) throw new Error(typeStock.error);
 
     const priceCheck = validatePrice(price, "Giá bán");
     if (!priceCheck.valid) throw new Error(priceCheck.error);
@@ -102,6 +105,8 @@ export const productService = {
         isAvailable: isAvailable !== undefined ? Boolean(isAvailable) : true,
         categoryId: validCategoryId,
         toppingsJson: toppingsCheck.jsonString,
+        productType: typeStock.productType,
+        stock: typeStock.stock,
       },
       include: { category: true },
     });
@@ -113,7 +118,20 @@ export const productService = {
 
   // Cập nhật sản phẩm
   async updateProduct(id: string, data: any) {
-    const { name, description, price, originalPrice, image, isHot, isBestseller, isOnBanner, isAvailable, categoryId, toppingsJson } = data;
+    const { name, description, price, originalPrice, image, isHot, isBestseller, isOnBanner, isAvailable, categoryId, toppingsJson, productType, stock } = data;
+
+    // Loại sản phẩm / tồn kho: gộp với giá trị hiện tại nếu chỉ gửi 1 trong 2
+    let typeStockData: { productType: string; stock: number | null } | undefined;
+    if (productType !== undefined || stock !== undefined) {
+      const current = await prisma.product.findUnique({ where: { id }, select: { productType: true, stock: true } });
+      if (!current) throw new Error("Không tìm thấy món ăn");
+      const typeStock = validateTypeAndStock(
+        productType !== undefined ? productType : current.productType,
+        stock !== undefined ? stock : current.stock
+      );
+      if (!typeStock.valid) throw new Error(typeStock.error);
+      typeStockData = { productType: typeStock.productType!, stock: typeStock.stock ?? null };
+    }
 
     let validatedPrice: number | undefined;
     if (price !== undefined) {
@@ -165,6 +183,7 @@ export const productService = {
         ...(isAvailable !== undefined && { isAvailable: Boolean(isAvailable) }),
         ...(validCategoryId && { categoryId: validCategoryId }),
         ...(validatedToppingsJsonStr !== undefined && { toppingsJson: validatedToppingsJsonStr }),
+        ...(typeStockData && typeStockData),
       },
       include: { category: true },
     });

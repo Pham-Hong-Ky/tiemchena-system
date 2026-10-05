@@ -207,6 +207,18 @@ export function validateCustomerAddress(address: string): { valid: boolean; erro
   return { valid: true };
 }
 
+// 3b. Email (không bắt buộc – có nhập thì phải đúng định dạng để không mất liên lạc với khách)
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+
+export function validateEmail(email: string | null | undefined): { valid: boolean; error?: string } {
+  const trimmed = (email || "").trim();
+  if (!trimmed) return { valid: true };
+  if (trimmed.length > 100 || !EMAIL_REGEX.test(trimmed)) {
+    return { valid: false, error: "Email không hợp lệ (ví dụ đúng: tenban@gmail.com)" };
+  }
+  return { valid: true };
+}
+
 // 4. Giới Hạn Tần Suất Gửi Đơn (Rate Limit)
 import { checkGenericRateLimit } from "@/lib/rateLimit";
 

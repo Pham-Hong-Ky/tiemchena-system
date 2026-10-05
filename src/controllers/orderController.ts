@@ -87,7 +87,11 @@ export const orderController = {
         error.message?.includes("không hợp lệ") ||
         error.message?.includes("trống") ||
         error.message?.includes("nhanh") ||
-        error.message?.includes("không tồn tại");
+        error.message?.includes("không tồn tại") ||
+        error.message?.includes("hết hàng") ||
+        error.message?.includes("số lượng") ||
+        error.message?.includes("Email") ||
+        error.message?.includes("Vui lòng");
 
       return NextResponse.json(
         { success: false, error: error.message || "Lỗi tạo đơn hàng, vui lòng thử lại" },

@@ -35,6 +35,8 @@ model Product {
   categoryId    String
   category      Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   toppingsJson  String?     // JSON array of available topping IDs or presets
+  productType   String      @default("physical") // physical, digital, service
+  stock         Int?        // Tồn kho – chỉ áp dụng cho physical; null = không theo dõi (món nấu theo đơn)
   orderItems    OrderItem[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -55,6 +57,7 @@ model Order {
   orderCode       String      @unique
   customerName    String
   customerPhone   String
+  customerEmail   String?
   customerAddress String
   note            String?
   ipAddress       String?
@@ -71,6 +74,20 @@ model Order {
 
   @@index([customerPhone])
   @@index([orderStatus, createdAt])
+}
+
+// Khách hàng (CRM) – nhập từ danh sách chờ, thêm tay, hoặc tự lưu khi khách đặt đơn
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String   @unique
+  zalo      String?
+  email     String?
+  address   String?
+  source    String   @default("order") // waitlist, order, manual
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Blacklist {

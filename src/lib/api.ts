@@ -71,6 +71,7 @@ export type CreateOrderPayload = {
   customerName: string;
   customerPhone: string;
   customerAddress: string;
+  customerEmail?: string;
   note?: string;
   paymentMethod: "COD" | "VIETQR" | "ZALO";
   items: unknown[];
@@ -165,6 +166,33 @@ export async function deleteCategory(id: string): Promise<{ success: boolean; me
 
 export async function getCustomers(): Promise<CustomerType[]> {
   return apiFetch<CustomerType[]>("/api/customers");
+}
+
+export type CustomerPayload = {
+  name: string;
+  phone: string;
+  zalo?: string;
+  email?: string;
+  address?: string;
+  note?: string;
+};
+
+export async function createCustomer(payload: CustomerPayload): Promise<CustomerType> {
+  return apiFetch<CustomerType>("/api/customers", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export async function importCustomers(
+  rows: CustomerPayload[]
+): Promise<{ created: number; skipped: number; errors: string[] }> {
+  return apiFetch("/api/customers", { method: "POST", body: JSON.stringify({ import: rows, source: "waitlist" }) });
+}
+
+export async function updateCustomer(id: string, payload: CustomerPayload): Promise<CustomerType> {
+  return apiFetch<CustomerType>("/api/customers", { method: "PUT", body: JSON.stringify({ id, ...payload }) });
+}
+
+export async function deleteCustomer(id: string): Promise<{ id: string }> {
+  return apiFetch<{ id: string }>(`/api/customers?id=${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 // ─── Upload API ───────────────────────────────────────────────────────────────

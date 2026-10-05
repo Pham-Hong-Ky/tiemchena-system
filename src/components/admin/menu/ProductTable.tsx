@@ -143,6 +143,7 @@ export function ProductTable({
                 <th className="p-3.5">Danh Mục</th>
                 <th className="p-3.5">Giá Bán</th>
                 <th className="p-3.5">Tùy Chọn (Options)</th>
+                <th className="p-3.5">Loại / Tồn Kho</th>
                 <th className="p-3.5">Trạng Thái Bán</th>
                 <th className="p-3.5 text-right">Thao Tác</th>
               </tr>
@@ -150,14 +151,14 @@ export function ProductTable({
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-16 text-slate-400">
+                  <td colSpan={7} className="text-center py-16 text-slate-400">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto text-orange-500 mb-2" />
                     <span>Đang tải danh sách món ăn...</span>
                   </td>
                 </tr>
               ) : paginatedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-16 text-slate-400">
+                  <td colSpan={7} className="text-center py-16 text-slate-400">
                     <AlertCircle className="w-8 h-8 mx-auto text-slate-300 mb-2" />
                     <span>Không tìm thấy món ăn nào</span>
                   </td>
@@ -255,6 +256,22 @@ export function ProductTable({
                         <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs">
                           {optCount > 0 ? `${optCount} tùy chọn` : "Mặc định"}
                         </span>
+                      </td>
+
+                      {/* Product type & stock */}
+                      <td className="p-3.5">
+                        <span className="block text-[11px] font-bold text-slate-500 uppercase">
+                          {p.productType === "digital" ? "Số" : p.productType === "service" ? "Dịch vụ" : "Vật lý"}
+                        </span>
+                        {p.productType && p.productType !== "physical" ? (
+                          <span className="text-[11px] text-slate-400">Không trừ kho</span>
+                        ) : p.stock === null || p.stock === undefined ? (
+                          <span className="text-[11px] text-slate-400">Không theo dõi</span>
+                        ) : (
+                          <span className={`font-extrabold text-sm ${p.stock <= 5 ? "text-red-600" : "text-slate-800"}`}>
+                            Còn {p.stock}
+                          </span>
+                        )}
                       </td>
 
                       {/* Availability toggle */}

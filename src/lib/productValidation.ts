@@ -34,6 +34,34 @@ export function validatePrice(
   return { valid: true, value: num };
 }
 
+export const PRODUCT_TYPES = ["physical", "digital", "service"] as const;
+
+/**
+ * Loại sản phẩm + tồn kho.
+ * - physical: stock là số nguyên ≥ 0, hoặc null = không theo dõi kho (món nấu theo đơn)
+ * - digital / service: luôn null – không trừ kho
+ */
+export function validateTypeAndStock(
+  productType: unknown,
+  stock: unknown
+): { valid: boolean; error?: string; productType?: string; stock?: number | null } {
+  const type = productType === undefined || productType === null || productType === "" ? "physical" : String(productType);
+  if (!PRODUCT_TYPES.includes(type as (typeof PRODUCT_TYPES)[number])) {
+    return { valid: false, error: "Loại sản phẩm phải là physical, digital hoặc service" };
+  }
+  if (type !== "physical") {
+    return { valid: true, productType: type, stock: null };
+  }
+  if (stock === undefined || stock === null || stock === "") {
+    return { valid: true, productType: type, stock: null };
+  }
+  const num = typeof stock === "number" ? stock : Number(stock);
+  if (!Number.isInteger(num) || num < 0 || num > 100000) {
+    return { valid: false, error: "Tồn kho phải là số nguyên từ 0 đến 100.000" };
+  }
+  return { valid: true, productType: type, stock: num };
+}
+
 export function validateToppingsJson(toppingsJson: unknown): {
   valid: boolean;
   error?: string;

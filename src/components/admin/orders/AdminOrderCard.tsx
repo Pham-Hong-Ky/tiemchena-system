@@ -200,28 +200,43 @@ export function AdminOrderCard({
         </div>
 
         {/* Price & Payment */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
-          <div className="flex items-center gap-1.5">
-            <span className="text-slate-500">PT:</span>
-            <span className="text-slate-800">{order.paymentMethod}</span>
-            <button
-              onClick={() =>
-                onPatchOrder({
-                  paymentStatus: order.paymentStatus === "PAID" ? "UNPAID" : "PAID",
-                })
-              }
-              className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase cursor-pointer ${
-                order.paymentStatus === "PAID"
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-red-100 text-red-700"
-              }`}
-            >
-              {order.paymentStatus === "PAID" ? "Đã Thu" : "Chưa Thu"}
-            </button>
+        <div className="pt-2 border-t border-slate-100 space-y-1.5 text-xs font-bold">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500">PT:</span>
+              <span className="text-slate-800">{order.paymentMethod}</span>
+              <button
+                onClick={() =>
+                  onPatchOrder({
+                    paymentStatus: order.paymentStatus === "PAID" ? "UNPAID" : "PAID",
+                  })
+                }
+                title={isPaid ? "Bấm để hoàn tác về pending" : "Bấm để xác nhận đã nhận tiền (bằng tay)"}
+                className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase cursor-pointer ${
+                  order.paymentStatus === "PAID"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-amber-100 text-amber-800"
+                }`}
+              >
+                {order.paymentStatus === "PAID" ? "✓ success · Đã Thu" : "⏳ pending · Chưa Thu"}
+              </button>
+            </div>
+            <span className="text-orange-600 font-extrabold text-sm">
+              {order.finalAmount.toLocaleString("vi-VN")}đ
+            </span>
           </div>
-          <span className="text-orange-600 font-extrabold text-sm">
-            {order.finalAmount.toLocaleString("vi-VN")}đ
-          </span>
+          {!isPaid && order.paymentMethod === "VIETQR" && order.orderStatus !== "CANCELLED" && (
+            <button
+              onClick={() => onPatchOrder({ paymentStatus: "PAID" })}
+              title="Dùng khi khách chuyển khoản sai nội dung nên Sepay không tự nhận"
+              className="w-full text-[11px] font-bold py-1.5 rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 cursor-pointer"
+            >
+              ✋ Xác nhận đã nhận tiền (bằng tay)
+            </button>
+          )}
+          {order.customerEmail && (
+            <p className="text-[11px] font-semibold text-slate-500 truncate">✉ {order.customerEmail}</p>
+          )}
         </div>
       </div>
 
