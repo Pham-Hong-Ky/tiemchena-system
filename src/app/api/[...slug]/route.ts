@@ -15,6 +15,8 @@ import { proxyImageController } from "@/controllers/proxyImageController";
 import { sseController } from "@/controllers/sseController";
 
 export const dynamic = "force-dynamic";
+// Gửi email test (+test) gồm 3 thư liên tiếp + thử lại khi lỗi → cần thêm thời gian chạy
+export const maxDuration = 30;
 
 type RouteParams = { params: Promise<{ slug: string[] }> };
 

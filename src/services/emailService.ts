@@ -27,7 +27,7 @@ export const emailService = {
 
     const results: SendEmailResult[] = [];
     for (const [i, step] of steps.entries()) {
-      if (testMode && i > 0) await sleep(1500);
+      if (testMode && i > 0) await sleep(2000);
       results.push(
         await sendEmail({
           to: customer.email,

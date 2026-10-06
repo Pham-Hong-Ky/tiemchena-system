@@ -19,7 +19,7 @@ export default function WaitlistPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [done, setDone] = useState<{ name: string; testMode: boolean } | null>(null);
+  const [done, setDone] = useState<{ name: string; testMode: boolean; sent: number; errors: string[] } | null>(null);
 
   const validate = () => {
     const next: Record<string, string> = {};
@@ -48,7 +48,13 @@ export default function WaitlistPage() {
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || "Không thể đăng ký, vui lòng thử lại");
-      setDone({ name: data.data.name, testMode: Boolean(data.data.emails?.testMode) });
+      const emails = data.data.emails || {};
+      setDone({
+        name: data.data.name,
+        testMode: Boolean(emails.testMode),
+        sent: Number(emails.sent) || 0,
+        errors: Array.isArray(emails.errors) ? emails.errors : [],
+      });
     } catch (e: any) {
       setFormError(e.message);
     } finally {
@@ -72,7 +78,8 @@ export default function WaitlistPage() {
           </p>
           {done.testMode && (
             <p className="text-xs font-semibold text-orange-700 bg-orange-50 rounded-xl px-3 py-2">
-              Chế độ test (+test): cả 3 email được gửi ngay, không chờ lịch.
+              Chế độ test (+test): đã gửi {done.sent}/3 email ngay, không chờ lịch.
+              {done.errors.length > 0 && <span className="block mt-1 text-red-600">Lỗi: {done.errors.join(" | ")}</span>}
             </p>
           )}
           <Link href="/" className="inline-block px-5 py-2.5 rounded-xl bg-orange-600 text-white text-sm font-bold">
