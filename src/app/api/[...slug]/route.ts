@@ -154,6 +154,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return customerController.post(request);
   }
 
+  // 12. Form khách quen (công khai): POST /api/waitlist → lưu CRM + chuỗi email Resend
+  if (p1 === "waitlist" && !p2) {
+    return customerController.joinWaitlist(request);
+  }
+
   return NextResponse.json({ success: false, error: "API Route not found" }, { status: 404 });
 }
 

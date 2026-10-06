@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { customerService } from "@/services/customerService";
 import { requireAdmin } from "@/lib/apiAuth";
+import { checkGenericRateLimit } from "@/lib/rateLimit";
 
 export const customerController = {
   // GET: Xử lý cả lấy danh sách khách (Admin) hoặc tra cứu tên (Lookup)
@@ -46,6 +47,37 @@ export const customerController = {
     } catch (error: any) {
       console.error("CustomerController.post error:", error);
       return NextResponse.json({ success: false, error: error.message || "Không thể thêm khách hàng" }, { status: 400 });
+    }
+  },
+
+  // POST /api/waitlist – form khách quen công khai (không cần đăng nhập)
+  async joinWaitlist(request: Request) {
+    try {
+      const forwardedFor = request.headers.get("x-forwarded-for");
+      const clientIp = (forwardedFor ? forwardedFor.split(",")[0] : request.headers.get("x-real-ip")) || "local";
+      const limit = checkGenericRateLimit("waitlist", clientIp.trim(), {
+        maxRequests: 5,
+        windowMs: 10 * 60 * 1000,
+        errorMessage: "Bạn gửi hơi nhanh rồi, đợi vài phút rồi thử lại nha",
+      });
+      if (!limit.allowed) {
+        return NextResponse.json({ success: false, error: limit.error }, { status: 429 });
+      }
+
+      const body = await request.json();
+      if (body.website_hp) {
+        return NextResponse.json({ success: false, error: "Spam detected" }, { status: 400 });
+      }
+      const { customer, emails } = await customerService.joinWaitlist({
+        name: body.name,
+        phone: body.phone,
+        email: body.email,
+        note: body.note,
+      });
+      return NextResponse.json({ success: true, data: { name: customer.name, emails } });
+    } catch (error: any) {
+      console.error("CustomerController.joinWaitlist error:", error);
+      return NextResponse.json({ success: false, error: error.message || "Không thể đăng ký, vui lòng thử lại" }, { status: 400 });
     }
   },
 

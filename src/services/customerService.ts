@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { validatePhoneNumber, validateCustomerName, validateEmail } from "@/lib/orderValidation";
+import { emailService, isTestEmail } from "@/services/emailService";
 
 const cleanPhoneOf = (p: unknown) => String(p || "").trim().replace(/[\s.-]/g, "");
 
@@ -183,6 +184,33 @@ export const customerService = {
       created++;
     }
     return { created, updated, skipped, errors };
+  },
+
+  // Khách tự điền form khách quen (/dang-ky) → lưu CRM + bắt đầu chuỗi 3 email chăm sóc
+  async joinWaitlist(body: CustomerInput) {
+    const data = validateCustomerInput(body);
+    if (!data.email) throw new Error("Vui lòng nhập email để nhận ưu đãi khách quen");
+
+    const exists = await prisma.customer.findUnique({ where: { phone: data.phone } });
+    const customer = exists
+      ? await prisma.customer.update({
+          where: { id: exists.id },
+          data: {
+            email: data.email,
+            ...(exists.source === "order" && { source: "waitlist" }),
+            ...(!exists.address && data.address && { address: data.address }),
+            ...(!exists.note && data.note && { note: data.note }),
+          },
+        })
+      : await prisma.customer.create({ data: { ...data, source: "waitlist" } });
+
+    // Khách đã nhận chuỗi email rồi thì không gửi lại (trừ email test "+test")
+    const alreadyStarted = exists?.emailSequenceAt && exists.email === data.email;
+    if (alreadyStarted && !isTestEmail(data.email)) {
+      return { customer, emails: { testMode: false, sent: 0, alreadyStarted: true } };
+    }
+    const emails = await emailService.startWelcomeSequence({ id: customer.id, name: customer.name, email: data.email });
+    return { customer, emails };
   },
 
   // Sửa khách (Admin)

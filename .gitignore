@@ -55,3 +55,6 @@ next-env.d.ts
 .windsurf/
 .agents/
 skills-lock.json
+
+# Khoa Resend (Ngay 11) - khong bao gio commit
+resend_config.txt

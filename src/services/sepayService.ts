@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { orderEvents } from "@/lib/orderEvents";
+import { emailService } from "@/services/emailService";
 
 export interface SepayWebhookPayload {
   id?: number;
@@ -122,6 +123,8 @@ export const sepayService = {
       },
       include: { items: true },
     });
+
+    await emailService.sendOrderConfirmationIfNeeded(updatedOrder.id);
 
     // 5. Emit real-time SSE notification
     orderEvents.emit("order_updated", updatedOrder);
