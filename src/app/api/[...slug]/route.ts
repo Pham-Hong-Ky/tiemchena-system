@@ -20,6 +20,29 @@ export const maxDuration = 30;
 
 type RouteParams = { params: Promise<{ slug: string[] }> };
 
+// Trang chủ tiemchena.life (web tĩnh trên Render) gửi form khách quen sang API này
+const CORS_ORIGINS = ["https://tiemchena.life", "https://www.tiemchena.life"];
+
+function withCors(request: NextRequest, response: NextResponse) {
+  const origin = request.headers.get("origin") || "";
+  if (CORS_ORIGINS.includes(origin) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+    response.headers.set("Access-Control-Allow-Origin", origin);
+    response.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    response.headers.set("Access-Control-Allow-Headers", "Content-Type");
+    response.headers.set("Vary", "Origin");
+  }
+  return response;
+}
+
+// Trình duyệt hỏi trước (preflight) khi trang khác domain gửi JSON
+export async function OPTIONS(request: NextRequest, { params }: RouteParams) {
+  const { slug = [] } = await params;
+  if (slug[0] === "waitlist" && !slug[1]) {
+    return withCors(request, new NextResponse(null, { status: 204 }));
+  }
+  return new NextResponse(null, { status: 404 });
+}
+
 // ==========================================
 // GET Dispatcher
 // ==========================================
@@ -157,8 +180,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 
   // 12. Form khách quen (công khai): POST /api/waitlist → lưu CRM + chuỗi email Resend
+  //     Gọi được từ trang chủ tiemchena.life (khác domain) nên cần CORS
   if (p1 === "waitlist" && !p2) {
-    return customerController.joinWaitlist(request);
+    return withCors(request, await customerController.joinWaitlist(request));
   }
 
   return NextResponse.json({ success: false, error: "API Route not found" }, { status: 404 });

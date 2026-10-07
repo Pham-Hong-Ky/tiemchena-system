@@ -1,14 +1,14 @@
 // Admin Authentication Helper
 // Works in both Node.js and Edge Runtime (Next.js Middleware)
 
+// Không bao giờ viết cứng khóa bí mật trong code (ai đọc được code sẽ giả được phiên đăng nhập).
+// Thiếu ADMIN_SECRET thì tạm suy ra từ tài khoản admin trong biến môi trường – vẫn là bí mật, không lộ trong code.
 const ADMIN_SECRET =
   process.env.ADMIN_SECRET ||
-  (process.env.NODE_ENV === "production"
-    ? (() => {
-        console.warn("⚠️ CẢNH BÁO BẢO MẬT: ADMIN_SECRET chưa được cấu hình trong .env!");
-        return "tiemchena_prod_secret_fallback_key_2026";
-      })()
-    : "tiemchena_dev_secret_key");
+  (() => {
+    console.warn("⚠️ CẢNH BÁO BẢO MẬT: ADMIN_SECRET chưa được cấu hình trong .env – hãy đặt một chuỗi ngẫu nhiên ≥ 32 ký tự!");
+    return `${process.env.ADMIN_USERNAME || ""}:${process.env.ADMIN_PASSWORD || ""}:tiemchena-session`;
+  })();
 
 export const COOKIE_NAME = "tiemchena_admin_token";
 export const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
