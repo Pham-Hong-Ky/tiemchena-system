@@ -18,10 +18,12 @@ const esc = (s: unknown) =>
 
 const vnd = (n: number) => `${Math.round(n).toLocaleString("vi-VN")}đ`;
 
-/** Tên gọi thân mật: lấy chữ cuối của họ tên ("Nguyễn Thị Lan" → "Lan") */
+/** Tên gọi thân mật: lấy chữ cuối của họ tên, viết hoa chữ đầu ("nguyễn thị lan" → "Lan") */
 export function firstName(fullName: string) {
   const parts = String(fullName || "").trim().split(/\s+/).filter(Boolean);
-  return parts[parts.length - 1] || "bạn";
+  const last = parts[parts.length - 1];
+  if (!last) return "bạn";
+  return last.charAt(0).toLocaleUpperCase("vi") + last.slice(1).toLocaleLowerCase("vi");
 }
 
 function layout(preheader: string, bodyHtml: string) {
