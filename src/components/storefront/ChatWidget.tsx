@@ -223,10 +223,10 @@ export function ChatWidget({ onSelectKeyword, onOpenTracking }: ChatWidgetProps)
     : [];
 
   return (
-    <>
+    <div className="fixed bottom-5 right-4 z-[45] flex flex-col items-end gap-3">
       {/* Khung chat */}
       {isOpen && (
-        <div className="fixed bottom-24 left-4 z-[45] flex h-[min(72vh,560px)] w-[calc(100vw-2rem)] max-w-[380px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-chat-pop">
+        <div className="flex h-[min(72vh,560px)] w-[calc(100vw-2rem)] max-w-[380px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-chat-pop">
           {/* Header */}
           <div
             className="relative flex items-center gap-3 px-4 py-3.5 text-white"
@@ -403,8 +403,8 @@ export function ChatWidget({ onSelectKeyword, onOpenTracking }: ChatWidgetProps)
       <button
         type="button"
         onClick={() => setIsOpen((o) => !o)}
-        className={`fixed bottom-5 left-4 z-[45] flex h-14 w-14 items-center justify-center rounded-full text-white shadow-xl transition-transform hover:scale-105 active:scale-95 ${
-          isOpen ? "bg-slate-800" : `animate-chat-ring ${config.colors.primaryBtn}`
+        className={`flex h-14 w-14 items-center justify-center rounded-full text-white shadow-xl transition-transform hover:scale-105 active:scale-95 ${
+          isOpen ? "bg-slate-800" : `bg-gradient-to-br ${config.colors.primaryGradient} shadow-orange-500/30 animate-chat-ring`
         }`}
         aria-label={isOpen ? "Đóng trợ lý ảo" : "Mở trợ lý ảo"}
       >
@@ -415,7 +415,7 @@ export function ChatWidget({ onSelectKeyword, onOpenTracking }: ChatWidgetProps)
           </span>
         )}
       </button>
-    </>
+    </div>
   );
 }
 
