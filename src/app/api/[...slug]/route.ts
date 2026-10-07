@@ -13,6 +13,7 @@ import { adminController } from "@/controllers/adminController";
 import { uploadController } from "@/controllers/uploadController";
 import { proxyImageController } from "@/controllers/proxyImageController";
 import { sseController } from "@/controllers/sseController";
+import { chatbotController } from "@/controllers/chatbotController";
 
 export const dynamic = "force-dynamic";
 
@@ -152,6 +153,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   // 11. Customers (CRM): POST /api/customers
   if (p1 === "customers" && !p2) {
     return customerController.post(request);
+  }
+
+  // 12. Chatbot: POST /api/chat
+  if (p1 === "chat" && !p2) {
+    return chatbotController.post(request);
   }
 
   return NextResponse.json({ success: false, error: "API Route not found" }, { status: 404 });

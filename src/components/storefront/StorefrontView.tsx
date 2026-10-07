@@ -14,6 +14,7 @@ import { OrderSuccessModal } from "@/components/storefront/OrderSuccessModal";
 import { OrderTrackingModal } from "@/components/storefront/OrderTrackingModal";
 import { TrustSection } from "@/components/storefront/TrustSection";
 import { Footer } from "@/components/storefront/Footer";
+import { ChatWidget } from "@/components/storefront/ChatWidget";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { ProductType, CategoryType, ToppingType, OrderType } from "@/types";
@@ -267,6 +268,12 @@ export function StorefrontView({
             }}
           />
         )}
+
+        {/* Trợ lý ảo tư vấn (bong bóng nổi toàn trang) */}
+        <ChatWidget
+          onSelectKeyword={handleSelectHeroTag}
+          onOpenTracking={() => handleOpenTracking()}
+        />
       </div>
     </CartProvider>
   );
