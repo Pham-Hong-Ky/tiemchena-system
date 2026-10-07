@@ -8,6 +8,7 @@ import {
   Clock,
   CheckCircle2,
   Award,
+  Scale,
   type LucideIcon,
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -67,9 +68,9 @@ export default function AdminStatsPage() {
       subColorClass: "text-emerald-600",
     },
     {
-      label: "Tổng Doanh Thu",
+      label: "Tổng Giá Trị Đơn",
       value: `${stats.revenueTotal.toLocaleString("vi-VN")}đ`,
-      subLabel: `Tổng ${stats.totalOrders} đơn từ trước tới nay`,
+      subLabel: `${stats.totalOrders} đơn (gồm cả đơn chưa trả tiền)`,
       icon: TrendingUp,
       colorClass: "text-blue-600 bg-blue-50",
       subColorClass: "text-slate-400",
@@ -109,6 +110,33 @@ export default function AdminStatsPage() {
           <MetricCard key={m.label} {...m} />
         ))}
       </div>
+
+      {/* Đối soát số liệu thật */}
+      {stats.reconciliation && (
+        <div className="bg-white p-5 rounded-2xl border-2 border-emerald-200 shadow-sm space-y-3">
+          <div className="flex items-center gap-2">
+            <Scale className="w-5 h-5 text-emerald-600" />
+            <h3 className="font-extrabold text-slate-900 text-sm">Đối Soát Số Liệu Thật</h3>
+            <span className="text-[11px] text-slate-400">
+              (đến {new Date().toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })})
+            </span>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            {[
+              ["Khách trong CRM", `${stats.reconciliation.customerCount}`, `${stats.reconciliation.customersWithEmail} khách có email`],
+              ["Danh sách chờ (tự đăng ký)", `${stats.reconciliation.waitlistCount}`, `${stats.reconciliation.emailSequenceCount} khách đã nhận chuỗi email`],
+              ["Đơn đã nhận tiền (Sepay)", `${stats.reconciliation.paidCount} / ${stats.totalOrders}`, "trên tổng số đơn"],
+              ["Tiền thật đã nhận", `${stats.reconciliation.revenuePaid.toLocaleString("vi-VN")}đ`, `+ ${stats.reconciliation.completedCodCount} đơn tiền mặt đã giao: ${stats.reconciliation.revenueCompletedCod.toLocaleString("vi-VN")}đ`],
+            ].map(([label, value, sub]) => (
+              <div key={label} className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-100">
+                <p className="font-bold text-slate-500">{label}</p>
+                <p className="text-xl font-black text-slate-900 mt-1">{value}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Top Selling Products */}

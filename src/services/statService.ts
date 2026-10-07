@@ -62,6 +62,26 @@ export const statService = {
       }
     }
 
+    // Đối soát: chỉ tính tiền THẬT đã nhận, không tính đơn chưa trả / đã hủy
+    const paidOrders = orders.filter((o) => o.paymentStatus === "PAID" && o.orderStatus !== "CANCELLED");
+    const completedCod = orders.filter((o) => o.paymentStatus !== "PAID" && o.orderStatus === "COMPLETED");
+    const [customerCount, waitlistCount, customersWithEmail, emailSequenceCount] = await Promise.all([
+      prisma.customer.count(),
+      prisma.customer.count({ where: { source: "waitlist" } }),
+      prisma.customer.count({ where: { email: { not: null } } }),
+      prisma.customer.count({ where: { emailSequenceAt: { not: null } } }),
+    ]);
+    const reconciliation = {
+      customerCount,
+      waitlistCount,
+      customersWithEmail,
+      emailSequenceCount,
+      paidCount: paidOrders.length,
+      revenuePaid: paidOrders.reduce((s, o) => s + o.finalAmount, 0),
+      completedCodCount: completedCod.length,
+      revenueCompletedCod: completedCod.reduce((s, o) => s + o.finalAmount, 0),
+    };
+
     const topProducts = Object.values(productSalesMap)
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
@@ -76,6 +96,7 @@ export const statService = {
       cancelledCount,
       topProducts,
       recentOrders: orders.slice(0, 10),
+      reconciliation,
     };
   },
 };
