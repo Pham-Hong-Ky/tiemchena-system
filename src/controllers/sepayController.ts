@@ -11,7 +11,10 @@ export const sepayController = {
       return NextResponse.json(result);
     } catch (error: any) {
       if (error.message === "UNAUTHORIZED_SEPAY") {
-        return NextResponse.json({ success: false, error: "Unauthorized SePay Webhook" }, { status: 401 });
+        return NextResponse.json(
+          { success: false, error: "Unauthorized SePay Webhook", diag: error.diag },
+          { status: 401 }
+        );
       }
       console.error("SepayController error:", error);
       return NextResponse.json(
