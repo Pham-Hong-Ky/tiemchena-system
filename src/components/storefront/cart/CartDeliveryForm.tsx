@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Phone,
+  Mail,
   User,
   MapPin,
   QrCode,
@@ -35,6 +36,8 @@ interface CartDeliveryFormProps {
   setCustomerName: (v: string) => void;
   customerPhone: string;
   setCustomerPhone: (v: string) => void;
+  customerEmail: string;
+  setCustomerEmail: (v: string) => void;
   customerAddress: string;
   setCustomerAddress: (v: string) => void;
   note: string;
@@ -62,6 +65,8 @@ export function CartDeliveryForm({
   setCustomerName,
   customerPhone,
   setCustomerPhone,
+  customerEmail,
+  setCustomerEmail,
   customerAddress,
   setCustomerAddress,
   note,
@@ -271,6 +276,26 @@ export function CartDeliveryForm({
           onChange={(e) => setCustomerPhone(e.target.value)}
           placeholder="Nhập số điện thoại..."
           className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-800 placeholder:font-sans placeholder:font-normal focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+        />
+      </div>
+
+      {/* 2b. Email nhận xác nhận đơn (không bắt buộc) */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+          <span className="flex items-center gap-1.5">
+            <Mail className="w-3.5 h-3.5 text-orange-600" />
+            <span>Email nhận xác nhận đơn</span>
+          </span>
+          <span className="text-[10px] text-slate-400 font-normal">Không bắt buộc</span>
+        </label>
+        <input
+          type="email"
+          inputMode="email"
+          maxLength={100}
+          value={customerEmail}
+          onChange={(e) => setCustomerEmail(e.target.value)}
+          placeholder="tenban@gmail.com"
+          className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:font-normal focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
         />
       </div>
 

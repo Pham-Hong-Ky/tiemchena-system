@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { orderEvents } from "@/lib/orderEvents";
 import { memoryCache } from "@/lib/memoryCache";
+import { emailService } from "@/services/emailService";
 import {
   validatePhoneNumber,
   validateCustomerName,
@@ -450,6 +451,7 @@ export const orderService = {
       });
     });
     if (data.orderStatus === "CANCELLED") memoryCache.invalidatePrefix("products:");
+    if (data.orderStatus) await emailService.sendOrderConfirmationIfNeeded(id);
 
     orderEvents.emit("order_updated", updated);
     return updated;

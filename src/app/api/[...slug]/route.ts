@@ -16,8 +16,33 @@ import { sseController } from "@/controllers/sseController";
 import { chatbotController } from "@/controllers/chatbotController";
 
 export const dynamic = "force-dynamic";
+// Gửi email test (+test) gồm 3 thư liên tiếp + thử lại khi lỗi → cần thêm thời gian chạy
+export const maxDuration = 30;
 
 type RouteParams = { params: Promise<{ slug: string[] }> };
+
+// Trang chủ tiemchena.life (web tĩnh trên Render) gửi form khách quen sang API này
+const CORS_ORIGINS = ["https://tiemchena.life", "https://www.tiemchena.life"];
+
+function withCors(request: NextRequest, response: NextResponse) {
+  const origin = request.headers.get("origin") || "";
+  if (CORS_ORIGINS.includes(origin) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+    response.headers.set("Access-Control-Allow-Origin", origin);
+    response.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    response.headers.set("Access-Control-Allow-Headers", "Content-Type");
+    response.headers.set("Vary", "Origin");
+  }
+  return response;
+}
+
+// Trình duyệt hỏi trước (preflight) khi trang khác domain gửi JSON
+export async function OPTIONS(request: NextRequest, { params }: RouteParams) {
+  const { slug = [] } = await params;
+  if (slug[0] === "waitlist" && !slug[1]) {
+    return withCors(request, new NextResponse(null, { status: 204 }));
+  }
+  return new NextResponse(null, { status: 404 });
+}
 
 // ==========================================
 // GET Dispatcher
@@ -155,7 +180,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return customerController.post(request);
   }
 
-  // 12. Chatbot: POST /api/chat
+  // 12. Form khách quen (công khai): POST /api/waitlist → lưu CRM + chuỗi email Resend
+  //     Gọi được từ trang chủ tiemchena.life (khác domain) nên cần CORS
+  if (p1 === "waitlist" && !p2) {
+    return withCors(request, await customerController.joinWaitlist(request));
+  }
+
+  // 13. Chatbot: POST /api/chat
   if (p1 === "chat" && !p2) {
     return chatbotController.post(request);
   }

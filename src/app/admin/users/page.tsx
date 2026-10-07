@@ -161,7 +161,9 @@ export default function AdminUsersPage() {
     setIsSaving(true);
     try {
       const res = await importCustomers(importPreview);
-      toast.success(`Đã nhập ${res.created} khách mới, bỏ qua ${res.skipped} số trùng`);
+      toast.success(
+        `Đã nhập ${res.created} khách mới, cập nhật ${res.updated} khách đã có, bỏ qua ${res.skipped} số trùng`
+      );
       if (res.errors.length) toast.warning(`${res.errors.length} dòng lỗi: ${res.errors[0]}`);
       setImportOpen(false);
       setImportText("");

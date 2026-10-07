@@ -20,6 +20,7 @@ import {
   validatePhoneNumber,
   validateCustomerName,
   validateCustomerAddress,
+  validateEmail,
   validateOpeningHours,
 } from "@/lib/orderValidation";
 import { isRunningInZalo, openZaloShopChat } from "@/lib/zaloMiniApp";
@@ -59,6 +60,7 @@ export function CartDrawer({
 
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [note, setNote] = useState("");
   const [websiteHp, setWebsiteHp] = useState("");
@@ -146,6 +148,14 @@ export function CartDrawer({
       return false;
     }
 
+    const emailCheck = validateEmail(customerEmail);
+    if (!emailCheck.valid) {
+      const msg = emailCheck.error || "Email không hợp lệ";
+      setFormError(msg);
+      toast.warning(msg);
+      return false;
+    }
+
     const addressCheck = validateCustomerAddress(customerAddress);
     if (!addressCheck.valid) {
       const msg = addressCheck.error || "Vui lòng nhập địa chỉ giao hàng cụ thể";
@@ -178,6 +188,7 @@ export function CartDrawer({
         const order = await createOrder({
           customerName: customerName.trim(),
           customerPhone: customerPhone.trim(),
+          customerEmail: customerEmail.trim() || undefined,
           customerAddress: customerAddress.trim(),
           note: note.trim(),
           paymentMethod: "VIETQR",
@@ -207,6 +218,7 @@ export function CartDrawer({
       const order = await createOrder({
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
+        customerEmail: customerEmail.trim() || undefined,
         customerAddress: customerAddress.trim(),
         note: note.trim(),
         paymentMethod: "COD",
@@ -413,6 +425,8 @@ export function CartDrawer({
                 setCustomerName={setCustomerName}
                 customerPhone={customerPhone}
                 setCustomerPhone={setCustomerPhone}
+                customerEmail={customerEmail}
+                setCustomerEmail={setCustomerEmail}
                 customerAddress={customerAddress}
                 setCustomerAddress={setCustomerAddress}
                 note={note}

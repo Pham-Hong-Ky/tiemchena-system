@@ -108,6 +108,17 @@ export interface StatsType {
   cancelledCount: number;
   topProducts: { name: string; count: number; revenue: number }[];
   recentOrders: OrderType[];
+  /** Đối soát số liệu thật */
+  reconciliation: {
+    customerCount: number; // bảng Customer (CRM)
+    waitlistCount: number; // khách tự đăng ký form khách quen
+    customersWithEmail: number;
+    emailSequenceCount: number; // khách đã được gửi chuỗi email chăm sóc
+    paidCount: number; // đơn đã nhận tiền (Sepay xác nhận)
+    revenuePaid: number; // tiền thật đã nhận
+    completedCodCount: number; // đơn tiền mặt đã giao xong
+    revenueCompletedCod: number;
+  };
 }
 
 export interface CustomerType {

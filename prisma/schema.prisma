@@ -68,6 +68,7 @@ model Order {
   discountAmount  Float       @default(0)
   finalAmount     Float
   voucherCode     String?
+  confirmEmailSentAt DateTime? // Đã gửi email xác nhận đơn (mỗi đơn chỉ gửi 1 lần)
   items           OrderItem[]
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -86,6 +87,7 @@ model Customer {
   address   String?
   source    String   @default("order") // waitlist, order, manual
   note      String?
+  emailSequenceAt DateTime? // Lúc bắt đầu chuỗi 3 email chăm sóc (null = chưa gửi)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
