@@ -4,8 +4,14 @@ import { sepayService } from "@/services/sepayService";
 export const sepayController = {
   async webhook(request: Request) {
     try {
-      const authHeader = request.headers.get("authorization") || "";
-      const body = await request.json();
+      const url = new URL(request.url);
+      const authHeader =
+        request.headers.get("authorization") ||
+        request.headers.get("x-api-key") ||
+        url.searchParams.get("apiKey") ||
+        url.searchParams.get("key") ||
+        "";
+      const body = await request.json().catch(() => ({}));
 
       const result = await sepayService.processWebhook(body, authHeader);
       return NextResponse.json(result);

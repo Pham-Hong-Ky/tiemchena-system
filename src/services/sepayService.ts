@@ -22,18 +22,26 @@ export const sepayService = {
     const anyPayload = payload as Record<string, any>;
 
     // 1. Verify SePay API Key (if configured in ENV)
-    const configuredKey = process.env.SEPAY_WEBHOOK_KEY;
-    if (configuredKey && configuredKey.trim()) {
-      const expectedKey = configuredKey.trim();
-      const cleanHeader = (authHeader || "").trim().replace(/^Apikey\s+/i, "");
-      if (cleanHeader !== expectedKey && authHeader !== `Apikey ${expectedKey}`) {
+    const configuredKey = (process.env.SEPAY_WEBHOOK_KEY || "").trim().replace(/^["']|["']$/g, "");
+    if (configuredKey) {
+      const cleanHeader = (authHeader || "")
+        .trim()
+        .replace(/^(Apikey|Bearer)\s+/i, "")
+        .replace(/^["']|["']$/g, "")
+        .trim();
+      if (
+        cleanHeader !== configuredKey &&
+        authHeader.trim() !== configuredKey &&
+        authHeader.trim() !== `Apikey ${configuredKey}` &&
+        authHeader.trim() !== `Bearer ${configuredKey}`
+      ) {
         console.warn("[SePay Webhook] Unauthorized attempt");
         // Chẩn đoán lệch khóa mà không lộ khóa: chỉ trả độ dài + 8 ký tự đầu của SHA-256
         const fp = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 8);
         const err = new Error("UNAUTHORIZED_SEPAY") as Error & { diag?: Record<string, unknown> };
         err.diag = {
-          expectedLength: expectedKey.length,
-          expectedFingerprint: fp(expectedKey),
+          expectedLength: configuredKey.length,
+          expectedFingerprint: fp(configuredKey),
           receivedLength: cleanHeader.length,
           receivedFingerprint: cleanHeader ? fp(cleanHeader) : null,
         };

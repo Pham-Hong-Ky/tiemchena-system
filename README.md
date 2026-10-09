@@ -19,14 +19,14 @@ Công nghệ: Next.js 16 · Prisma 6 + PostgreSQL · Tailwind · Resend (email) 
 
 ```bash
 npm install
-cp .env.example .env.local   # rồi điền giá trị thật
+cp .env.example .env         # rồi điền giá trị thật (Prisma chỉ đọc .env)
 npx prisma db push           # tạo bảng trong database
 npm run dev                  # mở http://localhost:3000
 ```
 
 ## Biến môi trường
 
-Không bao giờ viết khóa/mật khẩu thẳng vào code. Mọi bí mật nằm trong `.env.local` (máy) hoặc Vercel → Settings → Environment Variables (server). Các file `.env*`, `resend_config.txt` đã được `.gitignore` chặn.
+Không bao giờ viết khóa/mật khẩu thẳng vào code. Mọi bí mật nằm trong `.env` (máy) hoặc Vercel → Settings → Environment Variables (server). Các file `.env*`, `resend_config.txt` đã được `.gitignore` chặn.
 
 | Biến | Bắt buộc | Ý nghĩa |
 |---|:-:|---|
