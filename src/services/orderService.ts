@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { orderEvents } from "@/lib/orderEvents";
 import { memoryCache } from "@/lib/memoryCache";
 import { emailService } from "@/services/emailService";
+import { MAX_DELIVERY_DISTANCE_KM } from "@/data/hanoiLocations";
 import {
   validatePhoneNumber,
   validateCustomerName,
@@ -44,6 +45,11 @@ export interface CreateOrderInput {
   shippingFee?: number;
   distanceKm?: number | null;
   distanceSource?: string | null;
+  /** Toạ độ vị trí khách ghim/GPS trên bản đồ */
+  latitude?: number | null;
+  longitude?: number | null;
+  /** Tên vị trí hiển thị (xã/phường hoặc "GPS") */
+  locationName?: string | null;
 }
 
 export const orderService = {
@@ -293,18 +299,35 @@ export const orderService = {
     const distanceKm = typeof data.distanceKm === "number" ? data.distanceKm : null;
     const shippingFee = Math.max(0, Number(data.shippingFee) || 0);
 
-    if (distanceKm !== null && distanceKm > 15) {
-      throw new Error(`Khoảng cách giao hàng (${distanceKm} km) vượt quá bán kính tối đa (15 km) của quán.`);
+    if (distanceKm !== null && distanceKm > MAX_DELIVERY_DISTANCE_KM) {
+      throw new Error(`Khoảng cách giao hàng (${distanceKm} km) vượt quá bán kính tối đa (${MAX_DELIVERY_DISTANCE_KM} km) của quán.`);
     }
 
     const finalAmount = Math.max(0, totalAmount + shippingFee - discountAmount);
     const orderCode = "TCN-" + Math.floor(100000 + Math.random() * 900000);
 
+    // Toạ độ vị trí khách ghim/GPS → lưu vào ghi chú để admin thấy chính xác điểm giao
+    const hasCoords =
+      typeof data.latitude === "number" &&
+      typeof data.longitude === "number" &&
+      Number.isFinite(data.latitude) &&
+      Number.isFinite(data.longitude);
+    const lat = hasCoords ? (data.latitude as number) : 0;
+    const lng = hasCoords ? (data.longitude as number) : 0;
+
     let finalNote = data.note ? data.note.trim() : null;
+    const metaTags: string[] = [];
     if (distanceKm !== null) {
       const sourceTag = data.distanceSource ? ` (${data.distanceSource})` : "";
-      const shipTag = `[Ship: ${distanceKm}km - ${shippingFee.toLocaleString("vi-VN")}đ${sourceTag}]`;
-      finalNote = finalNote ? `${shipTag} ${finalNote}` : shipTag;
+      metaTags.push(`[Ship: ${distanceKm}km - ${shippingFee.toLocaleString("vi-VN")}đ${sourceTag}]`);
+    }
+    if (hasCoords) {
+      const locName = data.locationName ? ` ${data.locationName} -` : "";
+      metaTags.push(`[Vị trí:${locName} ${lat.toFixed(5)}, ${lng.toFixed(5)} - https://www.google.com/maps?q=${lat},${lng}]`);
+    }
+    if (metaTags.length > 0) {
+      const meta = metaTags.join(" ");
+      finalNote = finalNote ? `${meta} ${finalNote}` : meta;
     }
 
     // Tạo đơn + trừ kho trong 1 transaction: trừ kho thất bại (2 khách mua cùng lúc) thì không tạo đơn

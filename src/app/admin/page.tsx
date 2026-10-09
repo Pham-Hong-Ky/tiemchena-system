@@ -9,7 +9,6 @@ import {
   Volume2,
   Ban,
 } from "lucide-react";
-import { PrintBillModal } from "@/components/admin/PrintBillModal";
 import { StatusCard } from "@/components/admin/StatusCard";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Pagination } from "@/components/ui/Pagination";
@@ -17,6 +16,7 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { AdminOrderCard } from "@/components/admin/orders/AdminOrderCard";
 import { OrderFilterBar } from "@/components/admin/orders/OrderFilterBar";
 import { getOrders, patchOrder, deleteOrder, cleanCancelledOrders, blacklistOrder } from "@/lib/api";
+import { buildOrderCopyText, copyTextToClipboard } from "@/lib/orderCopy";
 import { OrderType } from "@/types";
 import { toast } from "@/context/ToastContext";
 import { playOrderNotificationSound } from "@/lib/notificationSound";
@@ -56,7 +56,6 @@ export default function AdminKdsPage() {
   const [filterStatus, setFilterStatus] = useState("ACTIVE");
   const [hideCancelled, setHideCancelled] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBillOrder, setSelectedBillOrder] = useState<OrderType | null>(null);
   const [newOrderAlert, setNewOrderAlert] = useState<string | null>(null);
 
   // Modals confirmation state
@@ -146,6 +145,16 @@ export default function AdminKdsPage() {
       toast.success("Cập nhật đơn hàng thành công");
     } catch {
       toast.error("Không thể cập nhật đơn hàng");
+    }
+  };
+
+  // Copy toàn bộ nội dung đơn hàng vào clipboard (thay cho nút in đơn)
+  const handleCopyOrder = async (order: OrderType) => {
+    const ok = await copyTextToClipboard(buildOrderCopyText(order));
+    if (ok) {
+      toast.success(`Đã copy đơn ${order.orderCode}`);
+    } else {
+      toast.error("Không thể copy đơn hàng, vui lòng thử lại");
     }
   };
 
@@ -320,7 +329,7 @@ export default function AdminKdsPage() {
             <AdminOrderCard
               key={order.id}
               order={order}
-              onPrintBill={() => setSelectedBillOrder(order)}
+              onCopyOrder={() => handleCopyOrder(order)}
               onQuickDelete={() => setOrderToDelete(order)}
               onCancelOrder={() => setOrderToCancel(order)}
               onBlacklistOrder={() => setOrderToBlacklist(order)}
@@ -344,13 +353,6 @@ export default function AdminKdsPage() {
       )}
 
       {/* Modals */}
-      {selectedBillOrder && (
-        <PrintBillModal
-          order={selectedBillOrder}
-          onClose={() => setSelectedBillOrder(null)}
-        />
-      )}
-
       {orderToBlacklist && (
         <ConfirmModal
           isOpen={true}

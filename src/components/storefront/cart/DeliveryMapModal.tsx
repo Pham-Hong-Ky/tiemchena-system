@@ -518,7 +518,7 @@ export function DeliveryMapModal({
           {!feeInfo.isWithinRange && (
             <div className="p-2 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-[11px] text-red-700 font-bold">
               <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
-              <span>Khoảng cách vượt quá bán kính giao hàng 15 km của quán!</span>
+              <span>Khoảng cách vượt quá bán kính giao hàng 5 km của quán!</span>
             </div>
           )}
 

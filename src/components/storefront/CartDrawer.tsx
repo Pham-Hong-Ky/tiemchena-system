@@ -73,6 +73,11 @@ export function CartDrawer({
   const [rangeError, setRangeError] = useState<string>("");
   const [distanceSource, setDistanceSource] = useState<"ward" | "pin" | "gps">("ward");
 
+  // Toạ độ vị trí ghim/GPS chi tiết (gửi kèm đơn hàng về admin)
+  const [locationLat, setLocationLat] = useState<number | null>(null);
+  const [locationLng, setLocationLng] = useState<number | null>(null);
+  const [locationName, setLocationName] = useState<string>("");
+
   // Flow & UI states
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -126,7 +131,7 @@ export function CartDrawer({
     }
 
     if (isOutOfRange) {
-      const msg = rangeError || "Địa chỉ nhận hàng cách quán quá xa (> 15 km), quán chưa thể nhận đơn này.";
+      const msg = rangeError || "Địa chỉ nhận hàng cách quán quá xa (> 5 km), quán chưa thể nhận đơn này.";
       setFormError(msg);
       toast.error(msg);
       return false;
@@ -197,6 +202,9 @@ export function CartDrawer({
           shippingFee,
           distanceKm,
           distanceSource,
+          latitude: locationLat,
+          longitude: locationLng,
+          locationName: locationName || undefined,
         });
 
         setCurrentQrOrder(order);
@@ -227,6 +235,9 @@ export function CartDrawer({
         shippingFee,
         distanceKm,
         distanceSource,
+        latitude: locationLat,
+        longitude: locationLng,
+        locationName: locationName || undefined,
       });
 
       clearCart();
@@ -447,6 +458,11 @@ export function CartDrawer({
                 setRangeError={setRangeError}
                 distanceSource={distanceSource}
                 setDistanceSource={setDistanceSource}
+                onLocationChange={(loc) => {
+                  setLocationLat(loc.lat);
+                  setLocationLng(loc.lng);
+                  setLocationName(loc.name);
+                }}
               />
 
               {/* 3. Footer / Submit CTA */}
@@ -458,7 +474,9 @@ export function CartDrawer({
                 <div className="flex items-center justify-between text-xs text-slate-500">
                   <span>Phí giao hàng:</span>
                   <span className="font-semibold text-slate-800">
-                    {shippingFee > 0
+                    {isOutOfRange
+                      ? "Ngoài bán kính giao (5km)"
+                      : shippingFee > 0
                       ? `${shippingFee.toLocaleString("vi-VN")}đ`
                       : distanceKm !== null
                       ? "Miễn phí"
@@ -491,7 +509,7 @@ export function CartDrawer({
                   ) : !storeHours.isOpen ? (
                     <span>QUÁN ĐANG ĐÓNG CỬA (MỞ: 09:00 - 22:00)</span>
                   ) : isOutOfRange ? (
-                    <span>ĐỊA CHỈ QUÁ XA (&gt; 15KM) - KHÔNG THỂ ĐẶT</span>
+                    <span>ĐỊA CHỈ QUÁ XA (&gt; 5KM) - KHÔNG THỂ ĐẶT</span>
                   ) : paymentMethod === "COD" ? (
                     <>
                       <span>ĐẶT HÀNG (TIỀN MẶT KHI NHẬN)</span>

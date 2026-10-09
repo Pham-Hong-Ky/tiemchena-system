@@ -1,6 +1,6 @@
 /**
  * Danh mục đơn vị hành chính TP. Hà Nội (Cập nhật mới nhất sau sắp xếp đơn vị hành chính)
- * Giới hạn các Quận/Huyện và Xã/Phường xung quanh Tiệm Chè Na trong bán kính 10 - 15 km
+ * Giới hạn các Quận/Huyện và Xã/Phường xung quanh Tiệm Chè Na trong bán kính 5 km
  */
 
 export interface HanoiWard {
@@ -25,10 +25,10 @@ export const SHOP_COORDINATES = {
   address: process.env.SHOP_ADDRESS || "Vũ Lăng, Thanh Trì, Hà Nội",
 };
 
-export const MAX_DELIVERY_DISTANCE_KM = 15; // Bán kính giao hàng tối đa 15km
+export const MAX_DELIVERY_DISTANCE_KM = 5; // Bán kính giao hàng tối đa 5km
 
 /**
- * Danh sách Quận / Huyện xung quanh quán trong bán kính 10 - 15 km
+ * Danh sách Quận / Huyện xung quanh quán trong bán kính 5 km
  * ĐÃ CẬP NHẬT 5 ĐƠN VỊ HÀNH CHÍNH MỚI CỦA HUYỆN THANH TRÌ:
  * - Xã Thanh Trì (Khu Vực Quán)
  * - Xã Nam Phù
@@ -234,9 +234,9 @@ export async function fetchOsrmDistanceKm(
 }
 
 /**
- * Bảng tính phí ship theo số km
- * Bán kính cơ sở: 2km đầu = 10.000đ, mỗi km tiếp theo +5.000đ (làm tròn lên Math.ceil)
- * Tối đa 15km
+ * Bảng tính phí ship theo số km (làm tròn lên theo km - Math.ceil)
+ * 1km = 5.000đ · 2km = 10.000đ · 3km = 15.000đ · 4km = 20.000đ · 5km = 30.000đ
+ * Tối đa 5km
  */
 export function calculateShippingFeeByKm(distanceKm: number): {
   shippingFee: number;
@@ -245,9 +245,6 @@ export function calculateShippingFeeByKm(distanceKm: number): {
   message?: string;
 } {
   const MAX_KM = MAX_DELIVERY_DISTANCE_KM;
-  const BASE_KM = 2;
-  const BASE_FEE = 10000;
-  const PER_KM = 5000;
 
   if (distanceKm > MAX_KM) {
     return {
@@ -258,8 +255,9 @@ export function calculateShippingFeeByKm(distanceKm: number): {
     };
   }
 
-  const extra = Math.max(0, Math.ceil(distanceKm - BASE_KM));
-  const shippingFee = BASE_FEE + extra * PER_KM;
+  // Làm tròn lên km gần nhất, tối thiểu 1km; từ 5km trở lên tính mức 30.000đ
+  const billableKm = Math.min(MAX_KM, Math.max(1, Math.ceil(distanceKm)));
+  const shippingFee = billableKm >= 5 ? 30000 : billableKm * 5000;
 
   return {
     shippingFee,

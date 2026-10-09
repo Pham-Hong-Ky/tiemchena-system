@@ -308,7 +308,7 @@ export const chatbotService = {
 
       case "delivery":
         return base(
-          `🛵 Quán giao hàng trong bán kính tối đa ${MAX_DELIVERY_DISTANCE_KM}km quanh Vũ Lăng, Ngũ Hiệp, Thanh Trì.\nPhí ship: 2km đầu 10.000đ, mỗi km tiếp theo +5.000đ. Phí chính xác sẽ hiển thị khi bạn nhập địa chỉ lúc đặt hàng nhé!`,
+          `🛵 Quán giao hàng trong bán kính tối đa ${MAX_DELIVERY_DISTANCE_KM}km quanh Vũ Lăng, Ngũ Hiệp, Thanh Trì.\nPhí ship: 1km 5.000đ · 2km 10.000đ · 3km 15.000đ · 4km 20.000đ · 5km 30.000đ. Phí chính xác sẽ hiển thị khi bạn nhập địa chỉ lúc đặt hàng nhé!`,
           { quickReplies: ["Xem thực đơn", "Cách đặt món", "Địa chỉ quán"] }
         );
 

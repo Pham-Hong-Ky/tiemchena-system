@@ -80,6 +80,11 @@ export type CreateOrderPayload = {
   shippingFee?: number;
   distanceKm?: number | null;
   distanceSource?: "ward" | "pin" | "gps" | "haversine" | string;
+  /** Toạ độ vị trí khách ghim/GPS trên bản đồ (gửi về admin) */
+  latitude?: number | null;
+  longitude?: number | null;
+  /** Tên vị trí hiển thị (xã/phường hoặc "GPS") */
+  locationName?: string | null;
 };
 
 export async function createOrder(payload: CreateOrderPayload): Promise<OrderType> {

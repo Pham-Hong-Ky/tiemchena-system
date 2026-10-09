@@ -58,6 +58,8 @@ interface CartDeliveryFormProps {
   setRangeError: (msg: string) => void;
   distanceSource?: "ward" | "pin" | "gps";
   setDistanceSource?: (s: "ward" | "pin" | "gps") => void;
+  /** Báo vị trí ghim/GPS lên component cha để gửi kèm đơn hàng về admin */
+  onLocationChange?: (loc: { lat: number; lng: number; name: string }) => void;
 }
 
 export function CartDeliveryForm({
@@ -87,6 +89,7 @@ export function CartDeliveryForm({
   setRangeError,
   distanceSource = "pin",
   setDistanceSource,
+  onLocationChange,
 }: CartDeliveryFormProps) {
   // Địa chỉ chi tiết (số nhà, ngõ ngách, tên tòa nhà nếu có)
   const [streetDetail, setStreetDetail] = useState<string>("");
@@ -137,6 +140,7 @@ export function CartDeliveryForm({
     syncFullAddress,
     userCoords.lat,
     userCoords.lng,
+    onLocationChange,
   ]);
 
   // Thay đổi số nhà / ngõ / chi tiết
@@ -173,10 +177,11 @@ export function CartDeliveryForm({
 
         setLocationName(newLocName);
         syncFullAddress(streetDetail, newLocName);
+        onLocationChange?.({ lat: latitude, lng: longitude, name: newLocName });
 
         if (!feeInfo.isWithinRange) {
           setRangeError(
-            `Vị trí GPS cách quán ${km} km, vượt quá bán kính giao hàng tối đa (15 km).`
+            `Vị trí GPS cách quán ${km} km, vượt quá bán kính giao hàng tối đa (5 km).`
           );
         } else {
           setRangeError("");
@@ -213,10 +218,11 @@ export function CartDeliveryForm({
       `Vị trí ghim (${result.lat.toFixed(4)}, ${result.lng.toFixed(4)})`;
     setLocationName(newLocName);
     syncFullAddress(streetDetail, newLocName);
+    onLocationChange?.({ lat: result.lat, lng: result.lng, name: newLocName });
 
     if (!result.isWithinRange) {
       setRangeError(
-        `Vị trí ghim cách quán ${result.distanceKm} km, vượt quá bán kính giao hàng tối đa (15 km).`
+        `Vị trí ghim cách quán ${result.distanceKm} km, vượt quá bán kính giao hàng tối đa (5 km).`
       );
     } else {
       setRangeError("");
@@ -377,13 +383,13 @@ export function CartDeliveryForm({
             </div>
           )}
 
-          {/* Cảnh báo vượt quá 15km */}
+          {/* Cảnh báo vượt quá 5km */}
           {isOutOfRange && (
             <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2 text-xs text-red-700">
               <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
               <div className="font-semibold leading-relaxed">
                 {rangeError ||
-                  `Vị trí cách quán ${distanceKm} km, vượt quá bán kính phục vụ (15 km). Quán rất tiếc chưa thể giao đơn này!`}
+                  `Vị trí cách quán ${distanceKm} km, vượt quá bán kính phục vụ (5 km). Quán rất tiếc chưa thể giao đơn này!`}
               </div>
             </div>
           )}
