@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifySessionToken, COOKIE_NAME } from "@/lib/auth";
 
-export async function middleware(request: NextRequest) {
+// Next.js 16: Middleware được đổi tên thành Proxy (proxy.ts). Logic giữ nguyên.
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Only apply to /admin routes

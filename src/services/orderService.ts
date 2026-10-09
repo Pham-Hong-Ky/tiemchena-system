@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { orderEvents } from "@/lib/orderEvents";
 import { memoryCache } from "@/lib/memoryCache";
 import { emailService } from "@/services/emailService";
-import { MAX_DELIVERY_DISTANCE_KM } from "@/data/hanoiLocations";
+import { MAX_DELIVERY_DISTANCE_KM, calculateShippingFeeByKm, haversineStraightKm, SHOP_COORDINATES } from "@/data/hanoiLocations";
 import {
   validatePhoneNumber,
   validateCustomerName,
@@ -296,17 +296,10 @@ export const orderService = {
     }
 
     // 6. Phí giao hàng & Khoảng cách
-    const distanceKm = typeof data.distanceKm === "number" ? data.distanceKm : null;
-    const shippingFee = Math.max(0, Number(data.shippingFee) || 0);
+    let distanceKm = typeof data.distanceKm === "number" ? data.distanceKm : null;
+    let shippingFee = Math.max(0, Number(data.shippingFee) || 0);
 
-    if (distanceKm !== null && distanceKm > MAX_DELIVERY_DISTANCE_KM) {
-      throw new Error(`Khoảng cách giao hàng (${distanceKm} km) vượt quá bán kính tối đa (${MAX_DELIVERY_DISTANCE_KM} km) của quán.`);
-    }
-
-    const finalAmount = Math.max(0, totalAmount + shippingFee - discountAmount);
-    const orderCode = "TCN-" + Math.floor(100000 + Math.random() * 900000);
-
-    // Toạ độ vị trí khách ghim/GPS → lưu vào ghi chú để admin thấy chính xác điểm giao
+    // Toạ độ vị trí khách ghim/GPS (nếu có) → server tự tính lại khoảng cách & phí, KHÔNG tin client
     const hasCoords =
       typeof data.latitude === "number" &&
       typeof data.longitude === "number" &&
@@ -314,6 +307,27 @@ export const orderService = {
       Number.isFinite(data.longitude);
     const lat = hasCoords ? (data.latitude as number) : 0;
     const lng = hasCoords ? (data.longitude as number) : 0;
+
+    if (hasCoords) {
+      // Khoảng cách đường chim bay là mức tối thiểu không thể ngắn hơn → chặn khai báo thấp hơn thực tế
+      const straightKm = Number(
+        haversineStraightKm(SHOP_COORDINATES.lat, SHOP_COORDINATES.lng, lat, lng).toFixed(1)
+      );
+      const effectiveKm = Math.max(distanceKm ?? 0, straightKm);
+      const feeInfo = calculateShippingFeeByKm(effectiveKm);
+      if (!feeInfo.isWithinRange) {
+        throw new Error(
+          `Khoảng cách giao hàng (${effectiveKm} km) vượt quá bán kính tối đa (${MAX_DELIVERY_DISTANCE_KM} km) của quán.`
+        );
+      }
+      distanceKm = effectiveKm;
+      shippingFee = feeInfo.shippingFee;
+    } else if (distanceKm !== null && distanceKm > MAX_DELIVERY_DISTANCE_KM) {
+      throw new Error(`Khoảng cách giao hàng (${distanceKm} km) vượt quá bán kính tối đa (${MAX_DELIVERY_DISTANCE_KM} km) của quán.`);
+    }
+
+    const finalAmount = Math.max(0, totalAmount + shippingFee - discountAmount);
+    const orderCode = "TCN-" + Math.floor(100000 + Math.random() * 900000);
 
     let finalNote = data.note ? data.note.trim() : null;
     const metaTags: string[] = [];

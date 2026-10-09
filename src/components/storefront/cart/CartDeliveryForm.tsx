@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import {
   Phone,
   Mail,
@@ -94,10 +94,8 @@ export function CartDeliveryForm({
   // Địa chỉ chi tiết (số nhà, ngõ ngách, tên tòa nhà nếu có)
   const [streetDetail, setStreetDetail] = useState<string>("");
 
-  // Vị trí định vị (từ Ghim bản đồ hoặc GPS)
-  const [locationName, setLocationName] = useState<string>(
-    "Khu vực Vũ Lăng, Xã Thanh Trì (Gần quán)"
-  );
+  // Vị trí định vị (từ Ghim bản đồ hoặc GPS). Rỗng = khách CHƯA chọn vị trí.
+  const [locationName, setLocationName] = useState<string>("");
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number }>({
     lat: SHOP_COORDINATES.lat + 0.003,
     lng: SHOP_COORDINATES.lng + 0.003,
@@ -115,33 +113,6 @@ export function CartDeliveryForm({
     },
     [setCustomerAddress]
   );
-
-  // Khởi tạo tính khoảng cách mặc định lần đầu
-  const hasInitializedRef = useRef(false);
-  useEffect(() => {
-    if (!hasInitializedRef.current && distanceKm === null) {
-      hasInitializedRef.current = true;
-      const km = calculateRoadDistanceKm(userCoords.lat, userCoords.lng);
-      const feeInfo = calculateShippingFeeByKm(km);
-      setDistanceKm(km);
-      setShippingFee(feeInfo.shippingFee);
-      setIsOutOfRange(!feeInfo.isWithinRange);
-      if (setDistanceSource) setDistanceSource("pin");
-      syncFullAddress(streetDetail, locationName);
-    }
-  }, [
-    distanceKm,
-    locationName,
-    setDistanceKm,
-    setDistanceSource,
-    setIsOutOfRange,
-    setShippingFee,
-    streetDetail,
-    syncFullAddress,
-    userCoords.lat,
-    userCoords.lng,
-    onLocationChange,
-  ]);
 
   // Thay đổi số nhà / ngõ / chi tiết
   const handleStreetDetailChange = (val: string) => {
@@ -349,9 +320,9 @@ export function CartDeliveryForm({
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 Vị trí đã định vị
               </div>
-              <div className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+              <div className={`text-xs font-extrabold flex items-center gap-1.5 ${locationName ? "text-slate-800" : "text-amber-600"}`}>
                 <span className="text-orange-600">📍</span>
-                <span>{locationName}</span>
+                <span>{locationName || "Chưa chọn — bấm Ghim Bản Đồ hoặc Vị Trí Hiện Tại (GPS)"}</span>
               </div>
             </div>
 
@@ -360,7 +331,7 @@ export function CartDeliveryForm({
               onClick={() => setIsMapModalOpen(true)}
               className="text-[11px] font-bold text-orange-600 hover:text-orange-700 underline shrink-0 cursor-pointer"
             >
-              Chỉnh ghim
+              {locationName ? "Chỉnh ghim" : "Chọn vị trí"}
             </button>
           </div>
 

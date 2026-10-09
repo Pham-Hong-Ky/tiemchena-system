@@ -170,7 +170,7 @@ export function CartDrawer({
     }
 
     if (distanceKm === null) {
-      const msg = "Địa chỉ chưa được xác định khoảng cách hoặc không hợp lệ. Vui lòng bấm 'Kiểm tra khoảng cách' hoặc chọn từ danh sách gợi ý.";
+      const msg = "Vui lòng chọn vị trí giao hàng: bấm 'Ghim Bản Đồ' hoặc 'Vị Trí Hiện Tại (GPS)' để quán tính phí ship chính xác.";
       setFormError(msg);
       toast.warning(msg);
       return false;
@@ -490,11 +490,13 @@ export function CartDrawer({
 
                 <button
                   type="submit"
-                  disabled={isSubmitting || isOutOfRange || !storeHours.isOpen}
+                  disabled={isSubmitting || isOutOfRange || !storeHours.isOpen || distanceKm === null}
                   className={`w-full ${
                     !storeHours.isOpen
                       ? "bg-slate-300 text-slate-500 cursor-not-allowed"
                       : isOutOfRange
+                      ? "bg-slate-300 text-slate-500 cursor-not-allowed"
+                      : distanceKm === null
                       ? "bg-slate-300 text-slate-500 cursor-not-allowed"
                       : paymentMethod === "COD"
                       ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/25 text-white"
@@ -508,6 +510,8 @@ export function CartDrawer({
                     </>
                   ) : !storeHours.isOpen ? (
                     <span>QUÁN ĐANG ĐÓNG CỬA (MỞ: 09:00 - 22:00)</span>
+                  ) : distanceKm === null ? (
+                    <span>CHỌN VỊ TRÍ GIAO HÀNG ĐỂ ĐẶT</span>
                   ) : isOutOfRange ? (
                     <span>ĐỊA CHỈ QUÁ XA (&gt; 5KM) - KHÔNG THỂ ĐẶT</span>
                   ) : paymentMethod === "COD" ? (

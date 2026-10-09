@@ -91,6 +91,8 @@ export const orderController = {
         error.message?.includes("hết hàng") ||
         error.message?.includes("số lượng") ||
         error.message?.includes("Email") ||
+        error.message?.includes("bán kính") ||
+        error.message?.includes("Khoảng cách") ||
         error.message?.includes("Vui lòng");
 
       return NextResponse.json(
