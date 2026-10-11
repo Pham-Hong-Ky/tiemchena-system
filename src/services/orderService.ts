@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { orderEvents } from "@/lib/orderEvents";
 import { memoryCache } from "@/lib/memoryCache";
 import { emailService } from "@/services/emailService";
+import { telegramService } from "@/services/telegramService";
 import { MAX_DELIVERY_DISTANCE_KM, calculateShippingFeeByKm, haversineStraightKm, SHOP_COORDINATES } from "@/data/hanoiLocations";
 import {
   validatePhoneNumber,
@@ -407,6 +408,10 @@ export const orderService = {
     }
 
     orderEvents.emit("new_order", order);
+
+    // Báo đơn mới về Telegram (không chặn tạo đơn nếu Telegram lỗi)
+    await telegramService.notifyNewOrder(order.id);
+
     return order;
   },
 
@@ -491,6 +496,12 @@ export const orderService = {
     if (data.orderStatus) await emailService.sendOrderConfirmationIfNeeded(id);
 
     orderEvents.emit("order_updated", updated);
+
+    // Thử gửi lại thông báo Telegram nếu lần tạo đơn trước đó bị lỗi (đã chống gửi trùng)
+    if (updated.orderStatus !== "CANCELLED") {
+      await telegramService.notifyNewOrder(updated.id);
+    }
+
     return updated;
   },
 

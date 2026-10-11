@@ -216,3 +216,20 @@ export async function uploadImage(file: File): Promise<string> {
   return data.url;
 }
 
+// ─── Telegram API ─────────────────────────────────────────────────────────────
+
+export async function getTelegramStatus(): Promise<{ configured: boolean; hasToken: boolean; chatCount: number }> {
+  return apiFetch<{ configured: boolean; hasToken: boolean; chatCount: number }>("/api/admin/telegram/status");
+}
+
+export type TelegramChat = { id: string; type: string; title: string };
+export type TelegramDetectResult = { chats: TelegramChat[]; error?: string; webhookUrl?: string };
+
+export async function detectTelegramChats(): Promise<TelegramDetectResult> {
+  return apiFetch<TelegramDetectResult>("/api/admin/telegram/detect");
+}
+
+export async function sendTelegramTest(): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/api/admin/telegram/test", { method: "POST" });
+}
+

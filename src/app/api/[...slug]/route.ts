@@ -14,6 +14,7 @@ import { uploadController } from "@/controllers/uploadController";
 import { proxyImageController } from "@/controllers/proxyImageController";
 import { sseController } from "@/controllers/sseController";
 import { chatbotController } from "@/controllers/chatbotController";
+import { telegramController } from "@/controllers/telegramController";
 
 export const dynamic = "force-dynamic";
 // Gửi email test (+test) gồm 3 thư liên tiếp + thử lại khi lỗi → cần thêm thời gian chạy
@@ -110,6 +111,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return proxyImageController.proxy(request);
   }
 
+  // 10b. Telegram status (admin)
+  if (p1 === "admin" && p2 === "telegram" && p3 === "status") {
+    return telegramController.status();
+  }
+
+  // 10c. Telegram detect chat id (admin)
+  if (p1 === "admin" && p2 === "telegram" && p3 === "detect") {
+    return telegramController.detect();
+  }
+
   // 11. SSE orders
   if (p1 === "sse" && p2 === "orders") {
     return sseController.streamOrders(request);
@@ -168,6 +179,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   // 9. Upload: POST /api/upload
   if (p1 === "upload" && !p2) {
     return uploadController.upload(request);
+  }
+
+  // 9b. Telegram test (admin): POST /api/admin/telegram/test
+  if (p1 === "admin" && p2 === "telegram" && p3 === "test") {
+    return telegramController.test();
   }
 
   // 10. Geocode: POST /api/geocode/estimate
