@@ -43,12 +43,17 @@ export function DeliveryMapModal({
   const polylineRef = useRef<L.Polyline | null>(null);
 
   const [currentLat, setCurrentLat] = useState<number>(
-    initialLat || SHOP_COORDINATES.lat + 0.005
+    initialLat ?? SHOP_COORDINATES.lat
   );
   const [currentLng, setCurrentLng] = useState<number>(
-    initialLng || SHOP_COORDINATES.lng + 0.005
+    initialLng ?? SHOP_COORDINATES.lng
   );
   const [isLocatingGps, setIsLocatingGps] = useState<boolean>(false);
+
+  // Khách đã thực sự chọn vị trí chưa? Nếu chưa thì KHÔNG hiện ghim giả & không cho xác nhận.
+  const [hasPicked, setHasPicked] = useState<boolean>(
+    typeof initialLat === "number" && typeof initialLng === "number"
+  );
 
   // Thanh tìm kiếm địa chỉ / địa điểm
   const [searchQuery, setSearchQuery] = useState("");
@@ -86,11 +91,24 @@ export function DeliveryMapModal({
     (lat: number, lng: number) => {
       setCurrentLat(lat);
       setCurrentLng(lng);
+      setHasPicked(true);
       setOsrmKm(null); // reset về Haversine preview ngay
       fetchOsrm(lat, lng);
     },
     [fetchOsrm]
   );
+
+  // Đảm bảo ghim + đường nối đã được thêm lên bản đồ (chỉ sau khi khách thực sự chọn vị trí)
+  const ensurePinLayers = useCallback(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    if (userMarkerRef.current && !map.hasLayer(userMarkerRef.current)) {
+      userMarkerRef.current.addTo(map);
+    }
+    if (polylineRef.current && !map.hasLayer(polylineRef.current)) {
+      polylineRef.current.addTo(map);
+    }
+  }, []);
 
   // Xử lý tìm kiếm địa chỉ (Local danh bạ Hà Nội + Photon OpenStreetMap)
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,6 +192,7 @@ export function DeliveryMapModal({
   const handleSelectLocation = (item: { name: string; lat: number; lng: number }) => {
     setSearchQuery(item.name);
     setShowDropdown(false);
+    ensurePinLayers();
 
     if (mapInstanceRef.current && userMarkerRef.current && polylineRef.current) {
       const latlng = L.latLng(item.lat, item.lng);
@@ -197,10 +216,13 @@ export function DeliveryMapModal({
       mapInstanceRef.current = null;
     }
 
-    const startLat = initialLat || SHOP_COORDINATES.lat + 0.005;
-    const startLng = initialLng || SHOP_COORDINATES.lng + 0.005;
+    const hasInitial =
+      typeof initialLat === "number" && typeof initialLng === "number";
+    const startLat = hasInitial ? (initialLat as number) : SHOP_COORDINATES.lat;
+    const startLng = hasInitial ? (initialLng as number) : SHOP_COORDINATES.lng;
     setCurrentLat(startLat);
     setCurrentLng(startLng);
+    setHasPicked(hasInitial);
 
     // 1. Tạo bản đồ Leaflet
     const map = L.map(mapContainerRef.current, {
@@ -257,7 +279,7 @@ export function DeliveryMapModal({
     const userMarker = L.marker([startLat, startLng], {
       icon: userIcon,
       draggable: true,
-    }).addTo(map);
+    });
     userMarkerRef.current = userMarker;
 
     // 5. Đường nối nét đứt giữa Quán và Khách
@@ -272,8 +294,14 @@ export function DeliveryMapModal({
         opacity: 0.8,
         dashArray: "6, 8",
       }
-    ).addTo(map);
+    );
     polylineRef.current = polyline;
+
+    // Chỉ hiện ghim khách khi ĐÃ có vị trí thật (không hiện ghim giả khi chưa chọn)
+    if (hasInitial) {
+      userMarker.addTo(map);
+      polyline.addTo(map);
+    }
 
     // Cập nhật khi kéo marker
     userMarker.on("drag", (e: any) => {
@@ -287,6 +315,8 @@ export function DeliveryMapModal({
 
     // Cập nhật khi click bất kỳ đâu trên bản đồ
     map.on("click", (e: L.LeafletMouseEvent) => {
+      userMarker.addTo(map);
+      polyline.addTo(map);
       userMarker.setLatLng(e.latlng);
       polyline.setLatLngs([
         [SHOP_COORDINATES.lat, SHOP_COORDINATES.lng],
@@ -296,11 +326,16 @@ export function DeliveryMapModal({
     });
 
     // Fit bounds để thấy cả quán và ghim
-    const bounds = L.latLngBounds([
-      [SHOP_COORDINATES.lat, SHOP_COORDINATES.lng],
-      [startLat, startLng],
-    ]);
-    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+    if (hasInitial) {
+      const bounds = L.latLngBounds([
+        [SHOP_COORDINATES.lat, SHOP_COORDINATES.lng],
+        [startLat, startLng],
+      ]);
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+    } else {
+      // Chưa có vị trí khách → chỉ canh giữa quanh quán, chờ khách chạm chọn
+      map.setView([SHOP_COORDINATES.lat, SHOP_COORDINATES.lng], 15);
+    }
 
     // Đảm bảo Leaflet tính toán kích thước container sau khi modal mở (fix lỗi map trắng)
     const t1 = setTimeout(() => {
@@ -327,6 +362,7 @@ export function DeliveryMapModal({
     setIsLocatingGps(true);
     try {
       const { lat, lng } = await getCurrentPositionRobust();
+      ensurePinLayers();
 
       if (mapInstanceRef.current && userMarkerRef.current && polylineRef.current) {
         const latlng = L.latLng(lat, lng);
@@ -346,6 +382,7 @@ export function DeliveryMapModal({
   };
 
   const handleConfirm = () => {
+    if (!hasPicked) return; // bắt buộc phải chọn vị trí thật trước khi xác nhận
     const nearest = findNearestHanoiWard(currentLat, currentLng);
     const locationName = nearest
       ? `${nearest.wardName}, ${nearest.districtName}`
@@ -478,41 +515,50 @@ export function DeliveryMapModal({
 
           {/* Hướng dẫn nhanh */}
           <div className="absolute left-3 top-3 z-20 bg-white/95 backdrop-blur-xs px-3 py-1.5 rounded-xl shadow-md border border-slate-200/80 text-[11px] font-semibold text-slate-700 pointer-events-none">
-            📍 Chạm hoặc kéo ghim để chỉnh vị trí
+            {hasPicked ? "📍 Chạm hoặc kéo ghim để chỉnh vị trí" : "👇 Chạm vào bản đồ để chọn vị trí giao hàng"}
           </div>
         </div>
 
         {/* Footer: Thông tin khoảng cách & nút xác nhận */}
         <div className="p-3.5 bg-slate-50 border-t border-slate-200 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800">
-                <span>🚗 Khoảng cách {osrmKm ? "thực tế" : "(ước lượng)"}:</span>
-                <span className="text-orange-600 font-black">{distanceKm} km</span>
-                {isFetchingOsrm && (
-                  <Loader2 className="w-3 h-3 animate-spin text-slate-400" />
-                )}
-              </div>
-              <p className="text-[11px] text-slate-500">
-                {osrmKm
-                  ? "Khoảng cách đường bộ thực tế (OSRM / OpenStreetMap)"
-                  : "Ước lượng đường xe máy (Haversine × 1.4)—đang tính chính xác..."}
-              </p>
+          {!hasPicked ? (
+            <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-[11px] text-amber-900 font-bold">
+              <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+              <span>Chưa chọn vị trí. Hãy chạm vào bản đồ (hoặc gõ tìm địa chỉ, hoặc bấm “Vị trí của tôi”) để chọn điểm giao hàng.</span>
             </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800">
+                    <span>🚗 Khoảng cách {osrmKm ? "thực tế" : "(ước lượng)"}:</span>
+                    <span className="text-orange-600 font-black">{distanceKm} km</span>
+                    {isFetchingOsrm && (
+                      <Loader2 className="w-3 h-3 animate-spin text-slate-400" />
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    {osrmKm
+                      ? "Khoảng cách đường bộ thực tế (OSRM / OpenStreetMap)"
+                      : "Ước lượng đường xe máy (Haversine × 1.4)—đang tính chính xác..."}
+                  </p>
+                </div>
 
-            <div className="text-right">
-              <div className="text-[11px] text-slate-500 font-medium">Phí giao hàng:</div>
-              <div className="text-sm font-black text-emerald-600">
-                {feeInfo.isWithinRange ? `${feeInfo.shippingFee.toLocaleString("vi-VN")}đ` : "Quá xa"}
+                <div className="text-right">
+                  <div className="text-[11px] text-slate-500 font-medium">Phí giao hàng:</div>
+                  <div className="text-sm font-black text-emerald-600">
+                    {feeInfo.isWithinRange ? `${feeInfo.shippingFee.toLocaleString("vi-VN")}đ` : "Quá xa"}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {!feeInfo.isWithinRange && (
-            <div className="p-2 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-[11px] text-red-700 font-bold">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
-              <span>Khoảng cách vượt quá bán kính giao hàng 5 km của quán!</span>
-            </div>
+              {!feeInfo.isWithinRange && (
+                <div className="p-2 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-[11px] text-red-700 font-bold">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+                  <span>Khoảng cách vượt quá bán kính giao hàng 5 km của quán!</span>
+                </div>
+              )}
+            </>
           )}
 
           <div className="flex items-center gap-2 pt-1">
@@ -526,7 +572,7 @@ export function DeliveryMapModal({
             <button
               type="button"
               onClick={handleConfirm}
-              disabled={!feeInfo.isWithinRange}
+              disabled={!hasPicked || !feeInfo.isWithinRange}
               className="flex-1 py-2.5 px-3 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-300 text-white text-xs font-extrabold rounded-xl transition shadow-md cursor-pointer flex items-center justify-center gap-1.5 disabled:cursor-not-allowed"
             >
               <Check className="w-4 h-4" />

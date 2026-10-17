@@ -17,7 +17,6 @@ import {
   ExternalLink,
 } from "lucide-react";
 import {
-  SHOP_COORDINATES,
   calculateRoadDistanceKm,
   calculateShippingFeeByKm,
 } from "@/data/hanoiLocations";
@@ -92,12 +91,10 @@ export function CartDeliveryForm({
   // Địa chỉ chi tiết (số nhà, ngõ ngách, tên tòa nhà nếu có)
   const [streetDetail, setStreetDetail] = useState<string>("");
 
-  // Vị trí định vị (từ Ghim bản đồ hoặc GPS). Rỗng = khách CHƯA chọn vị trí.
+  // Vị trí định vị (từ Ghim bản đồ hoặc GPS). null = khách CHƯA chọn vị trí.
+  // KHÔNG seed sẵn toạ độ giả để tránh vô tình dùng nhầm vị trí sai.
   const [locationName, setLocationName] = useState<string>("");
-  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number }>({
-    lat: SHOP_COORDINATES.lat + 0.003,
-    lng: SHOP_COORDINATES.lng + 0.003,
-  });
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const [isLocatingGps, setIsLocatingGps] = useState<boolean>(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState<boolean>(false);
@@ -151,10 +148,9 @@ export function CartDeliveryForm({
         toast.success("Đã lấy được vị trí hiện tại của bạn!");
       }
     } catch (err) {
+      // Lỗi định vị → chỉ báo lỗi, TUYỆT ĐỐI không gán vị trí/toạ độ sai.
       const msg = describeGeoError(err);
       toast.error(msg, "Không lấy được vị trí GPS");
-      // GPS thất bại → mở luôn bản đồ để khách ghim tay, không chặn luồng đặt hàng
-      setIsMapModalOpen(true);
     } finally {
       setIsLocatingGps(false);
     }
@@ -449,8 +445,8 @@ export function CartDeliveryForm({
       <DeliveryMapModal
         isOpen={isMapModalOpen}
         onClose={() => setIsMapModalOpen(false)}
-        initialLat={userCoords.lat}
-        initialLng={userCoords.lng}
+        initialLat={userCoords?.lat ?? null}
+        initialLng={userCoords?.lng ?? null}
         onConfirmLocation={handleConfirmPinMap}
       />
     </div>

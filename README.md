@@ -4,7 +4,7 @@ Live: **https://datmon.tiemchena.life** · Quản lý: **/admin** · Form khách
 
 | Phần | Làm gì |
 |---|---|
-| Trang chủ `/` | Menu, giỏ hàng, đặt món (tiền mặt hoặc quét VietQR) |
+| Trang chủ `/` | Menu, giỏ hàng, đặt món (chọn vị trí trên bản đồ/GPS + thanh toán VietQR) |
 | `/thanh-toan` | Thanh toán nhanh 1 món bằng QR, Sepay tự xác nhận |
 | `/dang-ky` | Form khách quen → lưu CRM + chuỗi 3 email chăm sóc (Resend) |
 | `/admin` | Đơn hàng, menu, khách hàng (CRM), thống kê, cài đặt |
