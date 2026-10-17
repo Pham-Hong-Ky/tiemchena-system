@@ -108,7 +108,7 @@ export default function CheckoutPage() {
   };
 
   const inputCls = (key: string) =>
-    `w-full px-3.5 py-2.5 rounded-xl border text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+    `w-full px-3.5 py-2.5 rounded-xl border text-base sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 ${
       errors[key] ? "border-red-400" : "border-slate-200"
     }`;
 

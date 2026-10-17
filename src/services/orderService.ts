@@ -366,7 +366,8 @@ export const orderService = {
         customerAddress: data.customerAddress.trim(),
         note: finalNote,
         ...(clientIp ? { ipAddress: clientIp } : {}),
-        paymentMethod: data.paymentMethod || "COD",
+        // Chỉ hỗ trợ thanh toán QR (VIETQR). Không nhận COD nữa — ép về VIETQR nếu client gửi giá trị khác.
+        paymentMethod: data.paymentMethod === "ZALO" ? "ZALO" : "VIETQR",
         paymentStatus: "UNPAID",
         orderStatus: "PENDING",
         totalAmount,

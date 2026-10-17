@@ -196,7 +196,7 @@ export function orderConfirmationEmail(order: OrderEmailData): EmailContent {
   const extraRows =
     (shipFee > 0 ? `<tr><td style="padding:6px 0;">Phí ship</td><td align="right">${vnd(shipFee)}</td></tr>` : "") +
     (order.discountAmount > 0 ? `<tr><td style="padding:6px 0;">Giảm giá</td><td align="right">-${vnd(order.discountAmount)}</td></tr>` : "");
-  const paymentLine = isPaid ? "Đã chuyển khoản ✅" : "Trả tiền khi nhận hàng";
+  const paymentLine = isPaid ? "Đã thanh toán ✅" : "Chuyển khoản VietQR";
 
   const guide = isDigitalOnly
     ? [
@@ -207,7 +207,7 @@ export function orderConfirmationEmail(order: OrderEmailData): EmailContent {
     : [
         `Ship 20–30 phút tới <b>${esc(order.customerAddress)}</b>. Shipper gọi số ${esc(order.customerPhone)} trước khi tới.`,
         "Đồ nóng hộp riêng, đá túi riêng: nhận hàng mở nắp đồ chiên ngay, chè ăn tới đâu đổ đá tới đó.",
-        isPaid ? "Bạn chuyển khoản rồi, shipper không thu thêm gì nha." : "Gửi tiền mặt cho shipper là được, hoặc chuyển khoản theo mã QR trên web.",
+        isPaid ? "Bạn chuyển khoản rồi, shipper không thu thêm gì nha." : "Bạn quét mã VietQR trên web để thanh toán, hệ thống tự xác nhận ngay ạ.",
         `Cần đổi gì thì nhắn Zalo ${ZALO}, nhớ báo mã đơn <b>${code}</b>.`,
       ];
 

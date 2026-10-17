@@ -314,13 +314,13 @@ export const chatbotService = {
 
       case "payment":
         return base(
-          "💳 Quán hỗ trợ 2 hình thức thanh toán:\n• COD – trả tiền mặt khi nhận hàng.\n• Chuyển khoản VietQR – quét mã QR ngay khi đặt để được xử lý nhanh.\nBạn chọn phương thức ở bước đặt hàng nhé!",
+          "💳 Quán thanh toán bằng chuyển khoản VietQR:\n• Bạn quét mã QR ngay khi đặt đơn.\n• Hệ thống tự động xác nhận 24/7, không cần tiền mặt khi nhận hàng.\nBạn xem mã QR ở bước đặt hàng nhé!",
           { quickReplies: ["Cách đặt món", "Xem thực đơn", "Phí giao hàng"] }
         );
 
       case "ordering":
         return base(
-          "🛒 Cách đặt món chỉ 4 bước:\n1. Chọn món & topping ở mục Thực Đơn.\n2. Bấm Thêm vào giỏ.\n3. Mở giỏ hàng, điền họ tên, SĐT và địa chỉ nhận.\n4. Chọn thanh toán (COD hoặc VietQR) rồi xác nhận. Sau đó bạn có thể tra cứu đơn bằng mã đơn ạ!",
+          "🛒 Cách đặt món chỉ 4 bước:\n1. Chọn món & topping ở mục Thực Đơn.\n2. Bấm Thêm vào giỏ.\n3. Mở giỏ hàng, chọn vị trí giao trên bản đồ, điền họ tên, SĐT và địa chỉ nhận.\n4. Quét mã VietQR để thanh toán, đơn tự xác nhận ngay. Sau đó bạn có thể tra cứu đơn bằng mã đơn ạ!",
           {
             quickReplies: ["Xem thực đơn", "Tra cứu đơn", "Phí giao hàng"],
             actions: [{ type: "menu", label: "Đến thực đơn" }],

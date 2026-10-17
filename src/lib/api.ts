@@ -73,7 +73,7 @@ export type CreateOrderPayload = {
   customerAddress: string;
   customerEmail?: string;
   note?: string;
-  paymentMethod: "COD" | "VIETQR" | "ZALO";
+  paymentMethod: "VIETQR" | "ZALO";
   items: unknown[];
   voucherCode?: string;
   website_hp?: string;

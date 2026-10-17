@@ -12,6 +12,8 @@ import {
   HANOI_DISTRICTS,
 } from "@/data/hanoiLocations";
 import { findNearestHanoiWard } from "@/services/geocodeService";
+import { getCurrentPositionRobust, describeGeoError } from "@/lib/geolocation";
+import { toast } from "@/context/ToastContext";
 
 interface DeliveryMapModalProps {
   isOpen: boolean;
@@ -321,35 +323,26 @@ export function DeliveryMapModal({
 
 
   // Nút lấy GPS hiện tại ngay trong bản đồ
-  const handleLocateMe = () => {
-    if (typeof window === "undefined" || !navigator.geolocation) {
-      alert("Thiết bị không hỗ trợ định vị GPS.");
-      return;
-    }
-
+  const handleLocateMe = async () => {
     setIsLocatingGps(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
+    try {
+      const { lat, lng } = await getCurrentPositionRobust();
 
-        if (mapInstanceRef.current && userMarkerRef.current && polylineRef.current) {
-          const latlng = L.latLng(latitude, longitude);
-          userMarkerRef.current.setLatLng(latlng);
-          polylineRef.current.setLatLngs([
-            [SHOP_COORDINATES.lat, SHOP_COORDINATES.lng],
-            [latitude, longitude],
-          ]);
-          mapInstanceRef.current.setView(latlng, 15, { animate: true });
-        }
-        updatePin(latitude, longitude);
-        setIsLocatingGps(false);
-      },
-      () => {
-        setIsLocatingGps(false);
-        alert("Không thể lấy vị trí GPS hiện tại. Vui lòng kéo ghim trên bản đồ.");
-      },
-      { timeout: 8000, enableHighAccuracy: true }
-    );
+      if (mapInstanceRef.current && userMarkerRef.current && polylineRef.current) {
+        const latlng = L.latLng(lat, lng);
+        userMarkerRef.current.setLatLng(latlng);
+        polylineRef.current.setLatLngs([
+          [SHOP_COORDINATES.lat, SHOP_COORDINATES.lng],
+          [lat, lng],
+        ]);
+        mapInstanceRef.current.setView(latlng, 15, { animate: true });
+      }
+      updatePin(lat, lng);
+    } catch (err) {
+      toast.error(describeGeoError(err), "Không lấy được vị trí GPS");
+    } finally {
+      setIsLocatingGps(false);
+    }
   };
 
   const handleConfirm = () => {
@@ -406,7 +399,7 @@ export function DeliveryMapModal({
                 if (searchResults.length > 0) setShowDropdown(true);
               }}
               placeholder="🔍 Nhập số nhà, tên đường, KĐT, xã phường..."
-              className="w-full pl-9 pr-9 py-2 bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-xs font-semibold text-slate-800 rounded-xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-hidden transition shadow-inner"
+              className="w-full pl-9 pr-9 py-2 bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-base sm:text-xs font-semibold text-slate-800 rounded-xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-hidden transition shadow-inner"
             />
             {isSearching ? (
               <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-500 animate-spin" />

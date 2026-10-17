@@ -64,7 +64,6 @@ export function CartDrawer({
   const [customerAddress, setCustomerAddress] = useState("");
   const [note, setNote] = useState("");
   const [websiteHp, setWebsiteHp] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"COD" | "VIETQR">("COD");
 
   // Geocode, Distance & Shipping Fee State
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
@@ -179,7 +178,7 @@ export function CartDrawer({
     return true;
   };
 
-  // Xử lý chốt đơn (COD Tiền Mặt hoặc SePay VietQR Tự Động)
+  // Xử lý chốt đơn: tạo đơn rồi mở màn hình quét mã VietQR (SePay tự động duyệt 24/7)
   const handleProceedOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -187,41 +186,6 @@ export function CartDrawer({
     setIsSubmitting(true);
     setFormError("");
 
-    // LUỒNG 1: QUÉT MÃ VIETQR (SEPAY TỰ ĐỘNG DUYỆT 24/7)
-    if (paymentMethod === "VIETQR") {
-      try {
-        const order = await createOrder({
-          customerName: customerName.trim(),
-          customerPhone: customerPhone.trim(),
-          customerEmail: customerEmail.trim() || undefined,
-          customerAddress: customerAddress.trim(),
-          note: note.trim(),
-          paymentMethod: "VIETQR",
-          items: cart,
-          website_hp: websiteHp,
-          shippingFee,
-          distanceKm,
-          distanceSource,
-          latitude: locationLat,
-          longitude: locationLng,
-          locationName: locationName || undefined,
-        });
-
-        setCurrentQrOrder(order);
-        clearCart();
-        setIsCartOpen(false);
-        setShowQrPaymentModal(true);
-      } catch (err: any) {
-        const msg = err instanceof ApiError ? err.message : err.message || "Lỗi tạo đơn hàng VietQR, vui lòng thử lại";
-        setFormError(msg);
-        toast.error(msg);
-      } finally {
-        setIsSubmitting(false);
-      }
-      return;
-    }
-
-    // LUỒNG 2: CHỐT ĐƠN TIỀN MẶT TRỰC TIẾP (COD)
     try {
       const order = await createOrder({
         customerName: customerName.trim(),
@@ -229,7 +193,7 @@ export function CartDrawer({
         customerEmail: customerEmail.trim() || undefined,
         customerAddress: customerAddress.trim(),
         note: note.trim(),
-        paymentMethod: "COD",
+        paymentMethod: "VIETQR",
         items: cart,
         website_hp: websiteHp,
         shippingFee,
@@ -240,12 +204,12 @@ export function CartDrawer({
         locationName: locationName || undefined,
       });
 
+      setCurrentQrOrder(order);
       clearCart();
       setIsCartOpen(false);
-      onOrderSuccess(order);
-      toast.success("Đặt hàng thành công! Quán đã tiếp nhận đơn của bạn.");
+      setShowQrPaymentModal(true);
     } catch (err: any) {
-      const msg = err instanceof ApiError ? err.message : err.message || "Lỗi tạo đơn hàng, vui lòng thử lại";
+      const msg = err instanceof ApiError ? err.message : err.message || "Lỗi tạo đơn hàng VietQR, vui lòng thử lại";
       setFormError(msg);
       toast.error(msg);
     } finally {
@@ -444,8 +408,6 @@ export function CartDrawer({
                 setNote={setNote}
                 websiteHp={websiteHp}
                 setWebsiteHp={setWebsiteHp}
-                paymentMethod={paymentMethod}
-                setPaymentMethod={setPaymentMethod}
                 formError={formError}
                 inZaloApp={inZaloApp}
                 distanceKm={distanceKm}
@@ -498,8 +460,6 @@ export function CartDrawer({
                       ? "bg-slate-300 text-slate-500 cursor-not-allowed"
                       : distanceKm === null
                       ? "bg-slate-300 text-slate-500 cursor-not-allowed"
-                      : paymentMethod === "COD"
-                      ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/25 text-white"
                       : "bg-orange-600 hover:bg-orange-700 shadow-orange-600/25 text-white"
                   } font-extrabold py-3.5 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 text-sm transition cursor-pointer disabled:opacity-60 active:scale-[0.99]`}
                 >
@@ -514,11 +474,6 @@ export function CartDrawer({
                     <span>CHỌN VỊ TRÍ GIAO HÀNG ĐỂ ĐẶT</span>
                   ) : isOutOfRange ? (
                     <span>ĐỊA CHỈ QUÁ XA (&gt; 5KM) - KHÔNG THỂ ĐẶT</span>
-                  ) : paymentMethod === "COD" ? (
-                    <>
-                      <span>ĐẶT HÀNG (TIỀN MẶT KHI NHẬN)</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
                   ) : (
                     <>
                       <span>QUÉT MÃ VIETQR ĐẶT HÀNG</span>

@@ -61,7 +61,7 @@ model Order {
   customerAddress String
   note            String?
   ipAddress       String?
-  paymentMethod   String      @default("COD") // COD, VIETQR, ZALO
+  paymentMethod   String      @default("VIETQR") // VIETQR, ZALO (đã bỏ COD - chỉ thanh toán QR)
   paymentStatus   String      @default("UNPAID") // UNPAID, PAID
   orderStatus     String      @default("PENDING") // PENDING, CONFIRMED, PREPARING, DELIVERING, COMPLETED, CANCELLED
   totalAmount     Float

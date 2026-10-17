@@ -198,7 +198,7 @@ export function CartDrawerItem({
           value={item.note || ""}
           onChange={(e) => onUpdateNote(e.target.value)}
           placeholder="Ghi chú món này (ít ngọt, không đá, chia riêng...)"
-          className="w-full text-[11px] px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition"
+          className="w-full text-base sm:text-[11px] px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition"
         />
       </div>
     </div>

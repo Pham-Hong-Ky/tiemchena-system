@@ -23,6 +23,8 @@ import {
 } from "@/data/hanoiLocations";
 import { findNearestHanoiWard } from "@/services/geocodeService";
 import { SHOP_ENV } from "@/config/shopEnv";
+import { getCurrentPositionRobust, describeGeoError } from "@/lib/geolocation";
+import { toast } from "@/context/ToastContext";
 import dynamic from "next/dynamic";
 
 // Dynamic import Modal Bản đồ để tránh lỗi SSR Leaflet
@@ -44,8 +46,6 @@ interface CartDeliveryFormProps {
   setNote: (v: string) => void;
   websiteHp: string;
   setWebsiteHp: (v: string) => void;
-  paymentMethod: "COD" | "VIETQR";
-  setPaymentMethod: (v: "COD" | "VIETQR") => void;
   formError: string;
   inZaloApp: boolean;
   distanceKm: number | null;
@@ -75,8 +75,6 @@ export function CartDeliveryForm({
   setNote,
   websiteHp,
   setWebsiteHp,
-  paymentMethod,
-  setPaymentMethod,
   formError,
   inZaloApp,
   distanceKm,
@@ -120,53 +118,46 @@ export function CartDeliveryForm({
     syncFullAddress(val, locationName);
   };
 
-  // Lấy vị trí GPS của điện thoại / máy tính
-  const handleGetGps = () => {
-    if (typeof window === "undefined" || !navigator.geolocation) {
-      alert("Thiết bị của bạn không hỗ trợ định vị GPS.");
-      return;
-    }
-
+  // Lấy vị trí GPS của điện thoại / máy tính (có fallback + thông báo rõ ràng theo từng loại lỗi)
+  const handleGetGps = async () => {
     setIsLocatingGps(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setUserCoords({ lat: latitude, lng: longitude });
+    try {
+      const { lat, lng } = await getCurrentPositionRobust();
+      setUserCoords({ lat, lng });
 
-        const km = calculateRoadDistanceKm(latitude, longitude);
-        const feeInfo = calculateShippingFeeByKm(km);
+      const km = calculateRoadDistanceKm(lat, lng);
+      const feeInfo = calculateShippingFeeByKm(km);
 
-        setDistanceKm(km);
-        setShippingFee(feeInfo.shippingFee);
-        setIsOutOfRange(!feeInfo.isWithinRange);
-        if (setDistanceSource) setDistanceSource("gps");
+      setDistanceKm(km);
+      setShippingFee(feeInfo.shippingFee);
+      setIsOutOfRange(!feeInfo.isWithinRange);
+      if (setDistanceSource) setDistanceSource("gps");
 
-        const nearest = findNearestHanoiWard(latitude, longitude);
-        const newLocName = nearest
-          ? `${nearest.wardName}, ${nearest.districtName}`
-          : `Tọa độ GPS (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
+      const nearest = findNearestHanoiWard(lat, lng);
+      const newLocName = nearest
+        ? `${nearest.wardName}, ${nearest.districtName}`
+        : `Tọa độ GPS (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
 
-        setLocationName(newLocName);
-        syncFullAddress(streetDetail, newLocName);
-        onLocationChange?.({ lat: latitude, lng: longitude, name: newLocName });
+      setLocationName(newLocName);
+      syncFullAddress(streetDetail, newLocName);
+      onLocationChange?.({ lat, lng, name: newLocName });
 
-        if (!feeInfo.isWithinRange) {
-          setRangeError(
-            `Vị trí GPS cách quán ${km} km, vượt quá bán kính giao hàng tối đa (5 km).`
-          );
-        } else {
-          setRangeError("");
-        }
-        setIsLocatingGps(false);
-      },
-      () => {
-        setIsLocatingGps(false);
-        alert(
-          "Không thể lấy được vị trí GPS hiện tại. Vui lòng cho phép quyền vị trí trong trình duyệt hoặc bấm 'Ghim Bản Đồ' để chọn vị trí nhé."
+      if (!feeInfo.isWithinRange) {
+        setRangeError(
+          `Vị trí GPS cách quán ${km} km, vượt quá bán kính giao hàng tối đa (5 km).`
         );
-      },
-      { timeout: 9000, enableHighAccuracy: true }
-    );
+      } else {
+        setRangeError("");
+        toast.success("Đã lấy được vị trí hiện tại của bạn!");
+      }
+    } catch (err) {
+      const msg = describeGeoError(err);
+      toast.error(msg, "Không lấy được vị trí GPS");
+      // GPS thất bại → mở luôn bản đồ để khách ghim tay, không chặn luồng đặt hàng
+      setIsMapModalOpen(true);
+    } finally {
+      setIsLocatingGps(false);
+    }
   };
 
   // Xử lý khi khách chốt Ghim trên bản đồ Leaflet
@@ -232,7 +223,7 @@ export function CartDeliveryForm({
           value={customerName}
           onChange={(e) => setCustomerName(e.target.value)}
           placeholder="Nhập tên người nhận..."
-          className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:font-normal focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+          className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-base sm:text-xs font-semibold text-slate-800 placeholder:font-normal focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
         />
       </div>
 
@@ -252,7 +243,7 @@ export function CartDeliveryForm({
           value={customerPhone}
           onChange={(e) => setCustomerPhone(e.target.value)}
           placeholder="Nhập số điện thoại..."
-          className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-800 placeholder:font-sans placeholder:font-normal focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+          className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-base sm:text-xs font-mono font-bold text-slate-800 placeholder:font-sans placeholder:font-normal focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
         />
       </div>
 
@@ -272,7 +263,7 @@ export function CartDeliveryForm({
           value={customerEmail}
           onChange={(e) => setCustomerEmail(e.target.value)}
           placeholder="tenban@gmail.com"
-          className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:font-normal focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+          className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-base sm:text-xs font-semibold text-slate-800 placeholder:font-normal focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
         />
       </div>
 
@@ -376,7 +367,7 @@ export function CartDeliveryForm({
             value={streetDetail}
             onChange={(e) => handleStreetDetailChange(e.target.value)}
             placeholder="Số nhà, ngõ/ngách, tên tòa nhà, số phòng chung cư (nếu có)..."
-            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 transition resize-none"
+            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-base sm:text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 transition resize-none"
           />
         </div>
 
@@ -417,7 +408,7 @@ export function CartDeliveryForm({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Nhập ghi chú..."
-          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition resize-none"
+          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-base sm:text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition resize-none"
         />
       </div>
 
@@ -425,57 +416,20 @@ export function CartDeliveryForm({
       <div className="space-y-2 pt-1">
         <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
           <span>Hình Thức Thanh Toán</span>
-          <span className="text-[10px] text-emerald-600 font-bold">Linh hoạt & Tiện lợi</span>
+          <span className="text-[10px] text-orange-600 font-bold">Tự động xác nhận 24/7</span>
         </label>
 
-        <div className="grid grid-cols-2 gap-2">
-          {/* Lựa chọn 1: Tiền mặt khi nhận hàng (COD) */}
-          <button
-            type="button"
-            onClick={() => setPaymentMethod("COD")}
-            className={`p-3 rounded-xl border-2 text-left transition flex flex-col justify-between relative cursor-pointer ${
-              paymentMethod === "COD"
-                ? "border-emerald-600 bg-emerald-50/60 shadow-xs ring-2 ring-emerald-500/20"
-                : "border-slate-200 bg-slate-50/50 hover:bg-slate-100/50 text-slate-700"
-            }`}
-          >
-            <div className="flex items-center justify-between w-full mb-1">
-              <span className="flex items-center gap-1.5 font-bold text-xs text-emerald-900">
-                <span className="text-sm">💵</span>
-                <span>Tiền Mặt (COD)</span>
-              </span>
-              {paymentMethod === "COD" && (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              )}
-            </div>
-            <p className="text-[10px] text-slate-500 leading-tight">
-              Thanh toán trực tiếp khi nhận hàng.
-            </p>
-          </button>
-
-          {/* Lựa chọn 2: Quét mã VietQR SePay */}
-          <button
-            type="button"
-            onClick={() => setPaymentMethod("VIETQR")}
-            className={`p-3 rounded-xl border-2 text-left transition flex flex-col justify-between relative cursor-pointer ${
-              paymentMethod === "VIETQR"
-                ? "border-orange-600 bg-orange-50/60 shadow-xs ring-2 ring-orange-500/20"
-                : "border-slate-200 bg-slate-50/50 hover:bg-slate-100/50 text-slate-700"
-            }`}
-          >
-            <div className="flex items-center justify-between w-full mb-1">
-              <span className="flex items-center gap-1.5 font-bold text-xs text-orange-950">
-                <QrCode className="w-4 h-4 text-orange-600" />
-                <span>Quét Mã VietQR</span>
-              </span>
-              {paymentMethod === "VIETQR" && (
-                <CheckCircle2 className="w-4 h-4 text-orange-600" />
-              )}
-            </div>
-            <p className="text-[10px] text-slate-500 leading-tight">
-              Chuyển khoản QR, hệ thống tự động xác nhận 24/7.
-            </p>
-          </button>
+        <div className="p-3 rounded-xl border-2 border-orange-600 bg-orange-50/60 shadow-xs ring-2 ring-orange-500/20 flex flex-col gap-1.5">
+          <div className="flex items-center justify-between w-full">
+            <span className="flex items-center gap-1.5 font-bold text-xs text-orange-950">
+              <QrCode className="w-4 h-4 text-orange-600" />
+              <span>Quét Mã VietQR</span>
+            </span>
+            <CheckCircle2 className="w-4 h-4 text-orange-600" />
+          </div>
+          <p className="text-[11px] text-slate-600 leading-snug">
+            Chuyển khoản bằng mã QR, hệ thống tự động xác nhận 24/7 — không cần tiền mặt khi nhận hàng.
+          </p>
         </div>
       </div>
 

@@ -36,6 +36,17 @@
   display: none;
 }
 
+/* ─── Chống Safari (iPhone/iPad) tự phóng to khi focus vào ô nhập liệu ────────
+   Safari tự zoom trang khi focus input/textarea/select có font-size < 16px.
+   Áp dụng cho thiết bị cảm ứng (điện thoại/máy tính bảng), không ảnh hưởng desktop. */
+@media (hover: none) and (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 /* Print bill styles */
 @media print {
   body * {
