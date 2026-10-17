@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Navigation, Check, AlertCircle, MapPin, Loader2, Search } from "lucide-react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -49,6 +50,13 @@ export function DeliveryMapModal({
     initialLng ?? SHOP_COORDINATES.lng
   );
   const [isLocatingGps, setIsLocatingGps] = useState<boolean>(false);
+
+  // Modal nằm trong <form> giỏ hàng → dùng portal để tách ra document.body,
+  // tránh mọi thao tác trong modal (Enter, nút...) vô tình submit form đặt hàng.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Khách đã thực sự chọn vị trí chưa? Nếu chưa thì KHÔNG hiện ghim giả & không cho xác nhận.
   const [hasPicked, setHasPicked] = useState<boolean>(
@@ -399,9 +407,9 @@ export function DeliveryMapModal({
     onClose();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] border border-slate-200">
         {/* Header Modal */}
@@ -435,6 +443,15 @@ export function DeliveryMapModal({
               onFocus={() => {
                 if (searchResults.length > 0) setShowDropdown(true);
               }}
+              onKeyDown={(e) => {
+                // Ô này nằm trong <form> giỏ hàng: chặn Enter để KHÔNG submit đơn ngoài ý muốn.
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (searchResults.length > 0) handleSelectLocation(searchResults[0]);
+                }
+              }}
+              enterKeyHint="search"
               placeholder="🔍 Nhập số nhà, tên đường, KĐT, xã phường..."
               className="w-full pl-9 pr-9 py-2 bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-base sm:text-xs font-semibold text-slate-800 rounded-xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-hidden transition shadow-inner"
             />
@@ -581,6 +598,7 @@ export function DeliveryMapModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
