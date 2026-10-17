@@ -23,11 +23,14 @@ export type GeoErrorCode =
 
 export class GeoLocationError extends Error {
   code: GeoErrorCode;
+  /** Với lỗi INACCURATE: vị trí gần đúng tốt nhất (chỉ dùng để canh bản đồ, KHÔNG dùng làm điểm giao). */
+  approx?: GeoPoint;
 
-  constructor(code: GeoErrorCode, message: string) {
+  constructor(code: GeoErrorCode, message: string, approx?: GeoPoint) {
     super(message);
     this.name = "GeoLocationError";
     this.code = code;
+    this.approx = approx;
   }
 }
 
@@ -44,37 +47,87 @@ export function isGeolocationSupported(): boolean {
   return typeof navigator !== "undefined" && !!navigator.geolocation;
 }
 
-function requestPosition(options: PositionOptions): Promise<GeoPoint> {
+/** Sai số "đủ tốt" để dừng chờ sớm (mét). */
+const GOOD_ACCURACY_METERS = 30;
+/** Thời gian tối đa chờ GPS cải thiện độ chính xác. */
+const MAX_WAIT_MS = 20000;
+/** Đã có fix dùng được (<= MAX_ACCURACY_METERS) thì chỉ chờ thêm chừng này để tìm fix tốt hơn. */
+const SETTLE_MS = 4000;
+
+function mapErrorCode(code: number): GeoErrorCode {
+  return code === 1
+    ? "PERMISSION_DENIED"
+    : code === 2
+    ? "POSITION_UNAVAILABLE"
+    : code === 3
+    ? "TIMEOUT"
+    : "UNKNOWN";
+}
+
+/**
+ * Theo dõi vị trí bằng watchPosition và trả về fix CHÍNH XÁC NHẤT trong thời gian chờ.
+ *
+ * Vì sao không dùng getCurrentPosition? Safari (iOS & macOS) trả về NGAY fix đầu tiên —
+ * thường là vị trí thô từ WiFi/IP (sai số vài trăm mét → vài km) — trong khi GPS thật
+ * cần thêm vài giây. Chrome/Android thường có sẵn fix tốt nên không gặp vấn đề này.
+ * watchPosition nhận liên tục các fix ngày càng chính xác hơn.
+ */
+function watchBestPosition(): Promise<GeoPoint> {
   return new Promise((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        resolve({
+    let best: GeoPoint | null = null;
+    let settleTimer: ReturnType<typeof setTimeout> | null = null;
+    let done = false;
+
+    const finish = (fn: () => void) => {
+      if (done) return;
+      done = true;
+      navigator.geolocation.clearWatch(watchId);
+      clearTimeout(maxTimer);
+      if (settleTimer) clearTimeout(settleTimer);
+      fn();
+    };
+
+    const resolveBest = () =>
+      finish(() =>
+        best ? resolve(best) : reject(new GeoLocationError("TIMEOUT", "Quá thời gian lấy vị trí"))
+      );
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const point: GeoPoint = {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
           accuracy: pos.coords.accuracy,
-        }),
-      (err) => {
-        const code: GeoErrorCode =
-          err.code === 1
-            ? "PERMISSION_DENIED"
-            : err.code === 2
-            ? "POSITION_UNAVAILABLE"
-            : err.code === 3
-            ? "TIMEOUT"
-            : "UNKNOWN";
-        reject(new GeoLocationError(code, err.message || "Không lấy được vị trí"));
+        };
+        if (!best || point.accuracy < best.accuracy) best = point;
+        if (best.accuracy <= GOOD_ACCURACY_METERS) return resolveBest();
+        // Đã dùng được → chờ thêm một chút xem có fix tốt hơn không
+        if (best.accuracy <= MAX_ACCURACY_METERS && !settleTimer) {
+          settleTimer = setTimeout(resolveBest, SETTLE_MS);
+        }
       },
-      options
+      (err) => {
+        // Lỗi tạm thời (TIMEOUT/UNAVAILABLE) khi đã có fix → vẫn dùng fix tốt nhất
+        if (err.code !== 1 && best) return resolveBest();
+        if (err.code === 3) return; // watchPosition sẽ tự thử tiếp, chờ maxTimer
+        finish(() =>
+          reject(new GeoLocationError(mapErrorCode(err.code), err.message || "Không lấy được vị trí"))
+        );
+      },
+      { enableHighAccuracy: true, timeout: MAX_WAIT_MS, maximumAge: 0 }
     );
+
+    const maxTimer = setTimeout(resolveBest, MAX_WAIT_MS);
   });
 }
 
 /**
- * Lấy vị trí hiện tại một cách chặt chẽ: thử GPS chính xác cao (2 lần cho các lỗi tạm thời),
- * chỉ nhận khi sai số <= MAX_ACCURACY_METERS, nếu không thì báo lỗi.
+ * Lấy vị trí hiện tại một cách chặt chẽ: chờ GPS cải thiện tới tối đa MAX_WAIT_MS,
+ * chỉ nhận khi sai số <= MAX_ACCURACY_METERS, nếu không thì báo lỗi
+ * (lỗi INACCURATE kèm `approx` để giao diện canh bản đồ cho khách tự ghim).
  *
- * LƯU Ý Safari/iOS: phải gọi getCurrentPosition NGAY trong cú chạm của người dùng,
- * KHÔNG await bất cứ thứ gì trước đó (nếu không Safari sẽ chặn vì mất user gesture).
+ * LƯU Ý Safari/iOS: phải gọi hàm này NGAY trong cú chạm của người dùng,
+ * KHÔNG await bất cứ thứ gì trước đó.
  */
 export async function getCurrentPositionRobust(): Promise<GeoPoint> {
   if (typeof window === "undefined" || !isGeolocationSupported()) {
@@ -89,45 +142,15 @@ export async function getCurrentPositionRobust(): Promise<GeoPoint> {
     );
   }
 
-  // Thử 2 lần: iPhone/Safari đôi khi lần gọi đầu thất bại tạm thời rồi lần sau thành công.
-  const attempts: PositionOptions[] = [
-    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
-    { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
-  ];
+  const point = await watchBestPosition();
+  if (point.accuracy <= MAX_ACCURACY_METERS) return point;
 
-  let lastError: GeoLocationError | null = null;
-  let mostAccuratePoorFix: GeoPoint | null = null;
-
-  for (const options of attempts) {
-    try {
-      const point = await requestPosition(options);
-      if (point.accuracy <= MAX_ACCURACY_METERS) return point; // đủ chính xác → dùng luôn
-      // Chính xác kém (network/garbage) → KHÔNG dùng, ghi nhận để báo lỗi rõ ràng
-      if (!mostAccuratePoorFix || point.accuracy < mostAccuratePoorFix.accuracy) {
-        mostAccuratePoorFix = point;
-      }
-    } catch (err) {
-      const e = err as GeoLocationError;
-      // Các lỗi này thử lại vô ích
-      if (
-        e.code === "PERMISSION_DENIED" ||
-        e.code === "INSECURE_CONTEXT" ||
-        e.code === "UNSUPPORTED"
-      ) {
-        throw e;
-      }
-      lastError = e;
-    }
-  }
-
-  if (mostAccuratePoorFix) {
-    throw new GeoLocationError(
-      "INACCURATE",
-      `Vị trí lấy được chỉ chính xác trong khoảng ±${Math.round(mostAccuratePoorFix.accuracy)}m.`
-    );
-  }
-
-  throw lastError ?? new GeoLocationError("UNKNOWN", "Không lấy được vị trí.");
+  // Chính xác kém (WiFi/IP, hoặc tắt "Vị trí chính xác") → KHÔNG dùng làm điểm giao
+  throw new GeoLocationError(
+    "INACCURATE",
+    `Vị trí lấy được chỉ chính xác trong khoảng ±${Math.round(point.accuracy)}m.`,
+    point
+  );
 }
 
 /** Chuyển lỗi định vị thành thông báo tiếng Việt thân thiện với khách hàng. */

@@ -13,7 +13,11 @@ import {
   HANOI_DISTRICTS,
 } from "@/data/hanoiLocations";
 import { findNearestHanoiWard } from "@/services/geocodeService";
-import { getCurrentPositionRobust, describeGeoError } from "@/lib/geolocation";
+import {
+  getCurrentPositionRobust,
+  describeGeoError,
+  type GeoLocationError,
+} from "@/lib/geolocation";
 import { toast } from "@/context/ToastContext";
 
 interface DeliveryMapModalProps {
@@ -42,6 +46,7 @@ export function DeliveryMapModal({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const polylineRef = useRef<L.Polyline | null>(null);
+  const accuracyCircleRef = useRef<L.Circle | null>(null);
 
   const [currentLat, setCurrentLat] = useState<number>(
     initialLat ?? SHOP_COORDINATES.lat
@@ -368,8 +373,20 @@ export function DeliveryMapModal({
   // Nút lấy GPS hiện tại ngay trong bản đồ
   const handleLocateMe = async () => {
     setIsLocatingGps(true);
+    const showAccuracy = (lat: number, lng: number, accuracy: number) => {
+      const map = mapInstanceRef.current;
+      if (!map) return;
+      accuracyCircleRef.current?.remove();
+      accuracyCircleRef.current = L.circle([lat, lng], {
+        radius: accuracy,
+        color: "#0284c7",
+        weight: 1,
+        fillOpacity: 0.1,
+        interactive: false,
+      }).addTo(map);
+    };
     try {
-      const { lat, lng } = await getCurrentPositionRobust();
+      const { lat, lng, accuracy } = await getCurrentPositionRobust();
       ensurePinLayers();
 
       if (mapInstanceRef.current && userMarkerRef.current && polylineRef.current) {
@@ -379,10 +396,30 @@ export function DeliveryMapModal({
           [SHOP_COORDINATES.lat, SHOP_COORDINATES.lng],
           [lat, lng],
         ]);
-        mapInstanceRef.current.setView(latlng, 15, { animate: true });
+        showAccuracy(lat, lng, accuracy);
+        // Zoom sát để khách dễ kéo ghim đúng cổng nhà
+        mapInstanceRef.current.setView(latlng, 18, { animate: true });
       }
       updatePin(lat, lng);
+      if (accuracy > 50) {
+        toast.info(
+          `Vị trí GPS sai số khoảng ±${Math.round(accuracy)}m — hãy kéo ghim đúng vị trí nhà bạn.`
+        );
+      }
     } catch (err) {
+      const approx = (err as GeoLocationError)?.approx;
+      if (approx && mapInstanceRef.current) {
+        // Chỉ canh bản đồ về khu vực gần đúng, KHÔNG đặt ghim — khách tự chạm chọn
+        showAccuracy(approx.lat, approx.lng, approx.accuracy);
+        mapInstanceRef.current.fitBounds(
+          L.latLng(approx.lat, approx.lng).toBounds(Math.min(approx.accuracy * 2, 6000))
+        );
+        toast.error(
+          `Chỉ xác định được khu vực gần đúng (±${Math.round(approx.accuracy)}m). Hãy chạm vào bản đồ để ghim chính xác nhà bạn.`,
+          "Vị trí chưa chính xác"
+        );
+        return;
+      }
       toast.error(describeGeoError(err), "Không lấy được vị trí GPS");
     } finally {
       setIsLocatingGps(false);
