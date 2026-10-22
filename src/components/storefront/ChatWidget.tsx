@@ -16,6 +16,7 @@ import { useCart } from "@/context/CartContext";
 import { useTheme } from "@/context/ThemeContext";
 import { toast } from "@/context/ToastContext";
 import { SHOP_ENV } from "@/config/shopEnv";
+import { ZaloFloatButton } from "@/components/storefront/ZaloFloatButton";
 import type { ChatAction, ChatProductSuggestion } from "@/services/chatbotService";
 
 interface ChatMessage {
@@ -399,11 +400,14 @@ export function ChatWidget({ onSelectKeyword, onOpenTracking }: ChatWidgetProps)
         </div>
       )}
 
+      {/* Nút Zalo nổi (ngay trên bong bóng trợ lý ảo) */}
+      <ZaloFloatButton />
+
       {/* Nút bong bóng nổi */}
       <button
         type="button"
         onClick={() => setIsOpen((o) => !o)}
-        className={`flex h-14 w-14 items-center justify-center rounded-full text-white shadow-xl transition-transform hover:scale-105 active:scale-95 ${
+        className={`relative flex h-14 w-14 items-center justify-center rounded-full text-white shadow-xl transition-transform hover:scale-105 active:scale-95 ${
           isOpen ? "bg-slate-800" : `bg-gradient-to-br ${config.colors.primaryGradient} shadow-orange-500/30 animate-chat-ring`
         }`}
         aria-label={isOpen ? "Đóng trợ lý ảo" : "Mở trợ lý ảo"}
