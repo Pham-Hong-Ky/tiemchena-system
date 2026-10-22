@@ -18,17 +18,17 @@ export function ZaloFloatButton() {
       rel="noopener noreferrer"
       aria-label="Nhắn Zalo đặt món"
       title="Nhắn Zalo đặt món"
-      className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#0a8bff] to-[#0057d9] text-white shadow-xl shadow-blue-500/30 transition-transform hover:scale-105 active:scale-95"
+      className="animate-zalo-glow relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#0a8bff] to-[#0057d9] text-white transition-transform hover:scale-105 active:scale-95"
     >
-      {/* Hai vòng sáng lan tỏa lệch nhịp quanh nút */}
+      {/* Hai vòng sóng lan tỏa lệch nhịp quanh nút */}
       <span
         aria-hidden="true"
-        className="animate-zalo-halo pointer-events-none absolute inset-0 rounded-full bg-[#0a8bff]/35"
+        className="animate-zalo-halo pointer-events-none absolute inset-0 rounded-full border-[3px] border-[#1a9bff]"
       />
       <span
         aria-hidden="true"
-        className="animate-zalo-halo pointer-events-none absolute inset-0 rounded-full bg-[#0a8bff]/25"
-        style={{ animationDelay: "1.2s" }}
+        className="animate-zalo-halo pointer-events-none absolute inset-0 rounded-full border-[3px] border-[#4db2ff]"
+        style={{ animationDelay: "1.1s" }}
       />
       <span className="relative flex flex-col items-center leading-none">
         <ZaloGlyph className="h-5 w-5" />
